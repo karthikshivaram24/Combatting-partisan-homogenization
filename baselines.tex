@@ -5,7 +5,7 @@
 \usepackage[margin=0.9in]{geometry}
 \usepackage{titling}
 \usepackage{graphicx}
-\graphicspath{ {./graphs/} }
+\graphicspath{ {./Graphs/} }
 \setlength{\droptitle}{-5em}
 
 \title{\textbf{Baselines - Combating Partisan Homogenization in News Recommendation Systems}}
@@ -79,10 +79,10 @@ To emulate a real-world scenario , we want to simulate a recommendation system i
  \includegraphics[width=0.6\textwidth]{Graphs/user_interaction_vs_model_performance_cumu.pdf}
 \end{figure}
 \begin{flushleft}
-The above figure shows the mean results across all cluster pairs, here we see that the \textbf{F1@K} metric tends to increase as the recommendation system increases it's interaction with both type of users, but is lower for Heterogeneous users compared to Homogeneous users.
+The above figure shows the mean results across all cluster pairs, here we see that the \textbf{F1@K} metric tends to increase as the recommendation system increases it's interaction with both type of users, but is lower for Heterogeneous users compared to Homogeneous users. (Also to note that it is dominated by the recall value).
 \end{flushleft}
 \begin{flushleft}
-For the \textbf{Precision@K} metric we see that there is a dip in precision for Homogeneous Users while an increase occurs for Heterogeneous Users (but there is an initial dip). The opposite occurs for \textbf{Recall@K} (Precision - Recall Tradeoff) i think varying  the classifier threshold can help us optimize one metric over the other.
+For the \textbf{Precision@K} metric we see that there is a dip in precision for Homogeneous Users while an increase occurs for Heterogeneous Users (but there is an initial dip). The opposite occurs for \textbf{Recall@K}. The \textbf{Precision@K} is lower here because as number of interactions increases between the system and the user, relevant items that are sorted in descending order are reducing i.e the most relevant items are being used up in earlier interactions.
 \end{flushleft}
 
 
