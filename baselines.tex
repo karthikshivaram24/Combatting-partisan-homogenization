@@ -61,7 +61,7 @@ Here we want to measure how well a recommendation system performs on an unseen t
 \vspace{-5ex}
 \begin{figure}[H]
 %  \centering
- \includegraphics[width=0.6\textwidth]{Graphs/cluster_sim_vs_model_perf_5.pdf}
+ \includegraphics[width=0.8\textwidth]{Graphs/cluster_sim_vs_model_perf_5.pdf}
 \end{figure}
 \subsection{Observations :}
 \begin{flushleft}
@@ -115,9 +115,16 @@ For this baseline experiment we use recommender specific metrics such as \textbf
 \end{itemize}
 \end{flushleft}
 
-\vspace{-3ex}
+\vspace{1ex}
 \begin{figure}[H]
- \includegraphics[width=0.6\textwidth]{Graphs/user_interaction_vs_model_performance_cumu.pdf}
+ \includegraphics[width=0.8\textwidth]{Graphs/user_interaction_vs_model_performance_cumu.pdf}
+\end{figure}
+\vspace{-4ex}
+\begin{figure}[H]
+ \includegraphics[width=1.0\textwidth]{Graphs/user_interaction_vs_model_performance_precision_all_cps_Homogeneous.pdf}
+\end{figure}
+\begin{figure}[H]
+ \includegraphics[width=1.0\textwidth]{Graphs/user_interaction_vs_model_performance_precision_all_cps_Heterogeneous.pdf}
 \end{figure}
 \subsection{Observations:}
 \begin{flushleft}
@@ -131,6 +138,7 @@ The above figure shows the mean results across all cluster pairs.
 
 
 \vspace{-1ex}
+\newpage
 \section{Baseline 3: How easy is it for the Recommendation System to detect a change in topics}
 \begin{flushleft}
 We want to know how the recommendation system performs in detecting a change in topics , so we measure the performance of the system using a single cluster and compare it against our online setting performance (shown in the above baseline). 
@@ -144,12 +152,13 @@ We want to know how the recommendation system performs in detecting a change in 
 \end{flushleft}
 % \vspace{-5ex}
 \begin{figure}[H]
- \includegraphics[width=0.6\textwidth]{Graphs/user_interaction_vs_model_performance_single_cluster.pdf}
+ \includegraphics[width=0.8\textwidth]{Graphs/user_interaction_vs_model_performance_cumu_single_cluster.pdf}
 \end{figure}
 
 
 
-\vspace{-1ex}
+
+\newpage
 \section{Baseline 4: Varying Regularization Strength to remove Spurious Correlations}
 \begin{flushleft}
 We want to measure the effect of the size of regularization constant against model performance to see if removing spurious correlations helps aid model performance.
@@ -160,14 +169,15 @@ For Homogeneous Users we see that a higher regularization constant tends to hurt
 \end{flushleft}
 \end{flushleft}
 \begin{figure}[H]
- \includegraphics[width=0.6\textwidth]{Graphs/regularization_vs_model_performance_cumu_Homogeneous.pdf}
+ \includegraphics[width=0.8\textwidth]{Graphs/regularization_vs_model_performance_cumu_Homogeneous.pdf}
 \end{figure}
 \subsection{Heterogeneous Users}
 \begin{flushleft}
 For Heterogeneous Users on the other hand, the greater the regularization constant the better the model performs (as it can be seen across all 3 metrics), so limiting spurious correlations definitely does help in this scenario as words that overlap across stances are demoted in importance. 
 \end{flushleft}
+\vspace{-4ex}
 \begin{figure}[H]
- \includegraphics[width=0.6\textwidth]{Graphs/regularization_vs_model_performance_cumu_Heterogeneous.pdf}
+ \includegraphics[width=0.8\textwidth]{Graphs/regularization_vs_model_performance_cumu_Heterogeneous.pdf}
 \end{figure}
 
 
@@ -181,12 +191,12 @@ We want to measure the effect of using different learning rates to see which lea
 \subsection{Homogeneous Users :}
 \vspace{-3ex}
 \begin{figure}[H]
- \includegraphics[width=0.6\textwidth]{Graphs/lr_vs_model_performance_cumu_Homogeneous.pdf}
+ \includegraphics[width=0.8\textwidth]{Graphs/lr_vs_model_performance_cumu_Homogeneous.pdf}
 \end{figure}
 \subsection{Heterogeneous Users :}
 \vspace{-3ex}
 \begin{figure}[H]
- \includegraphics[width=0.6\textwidth]{Graphs/lr_vs_model_performance_cumu_Heterogeneous.pdf}
+ \includegraphics[width=0.8\textwidth]{Graphs/lr_vs_model_performance_cumu_Heterogeneous.pdf}
 \end{figure}
 
 \vspace{1ex}
@@ -194,6 +204,9 @@ We want to measure the effect of using different learning rates to see which lea
 \begin{flushleft}
 We want to measure how well the model would perform when an article from an unseen topic arrives along with articles from the original topic the classifier was trained on
 \end{flushleft}
+\begin{figure}[H]
+ \includegraphics[width=0.8\textwidth]{Graphs/user_interaction_vs_model_performance_cumu_mixed_cluster.pdf}
+\end{figure}
 
 \vspace{1ex}
 \section{Baseline 7: Utilizing Embedding Representations}
