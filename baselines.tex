@@ -130,9 +130,10 @@ For this baseline experiment we use recommender specific metrics such as \textbf
 \begin{flushleft}
 The above figure shows the mean results across all cluster pairs.
 \begin{itemize}
-    \item For the Homogeneous User we see that \textbf{Precision@K} decreases as the number of interactions increase, this could be due to the fact that the most probable items the user likes are already recommended in the initial user-interactions (as we sort by predicted probability).
+    \item For the Homogeneous User we see that \textbf{Precision@K} decreases as the number of interactions increase, this could be due to the fact that the most probable items the user likes are already recommended in the initial user-interactions (as we sort by predicted probability). Also from the precision graph with all cluster pairs shown we see that a few clusters do increase in precision.
     \item For the Heterogeneous User we see that their is an initial dip in \textbf{Precision@K} and then it increases as the content recommender learns the different preferences of the heterogeneous user.
     \item We also see that the \textbf{Recall@K} increases as number of interactions increase (as more relevant articles keep getting recommended).
+    \item Overall we see that the precision for Homogeneous users is higher than heterogeneous users
 \end{itemize}
 \end{flushleft}
 
@@ -146,7 +147,7 @@ We want to know how the recommendation system performs in detecting a change in 
 \subsection{Observations :}
 \begin{flushleft}
 \begin{itemize}
-    \item Similar trend in Precision@K occurs here (compared to baseline 2). 
+    \item Similar trend in Precision@K occurs here (compared to baseline 2 - Homogeneous User). 
     \item  When we compare these scores to graphs in Baseline 2 we definitely see that the recommendation system tends to have an easier time when only one topic is concerned compared to 2 different topics, so the model is having a hard time in identifying a change in topic.
 \end{itemize}
 \end{flushleft}
@@ -154,20 +155,23 @@ We want to know how the recommendation system performs in detecting a change in 
 \begin{figure}[H]
  \includegraphics[width=0.8\textwidth]{Graphs/user_interaction_vs_model_performance_cumu_single_cluster.pdf}
 \end{figure}
+\begin{figure}[H]
+ \includegraphics[width=1.0\textwidth]{Graphs/user_interaction_vs_model_performance_precision_all_cps_single_cluster.pdf}
+\end{figure}
 
 
 
 
-\newpage
 \section{Baseline 4: Varying Regularization Strength to remove Spurious Correlations}
 \begin{flushleft}
 We want to measure the effect of the size of regularization constant against model performance to see if removing spurious correlations helps aid model performance.
 
 \subsection{Homogeneous Users}
 \begin{flushleft}
-For Homogeneous Users we see that a higher regularization constant tends to hurt model performance.
+For Homogeneous Users we see that a high regularization constant tends to hurt model performance, even not using a regularization constant (alpha =0) hurts precision compared to using a small regularization constant.
 \end{flushleft}
 \end{flushleft}
+\vspace{-5ex}
 \begin{figure}[H]
  \includegraphics[width=0.8\textwidth]{Graphs/regularization_vs_model_performance_cumu_Homogeneous.pdf}
 \end{figure}
@@ -175,14 +179,14 @@ For Homogeneous Users we see that a higher regularization constant tends to hurt
 \begin{flushleft}
 For Heterogeneous Users on the other hand, the greater the regularization constant the better the model performs (as it can be seen across all 3 metrics), so limiting spurious correlations definitely does help in this scenario as words that overlap across stances are demoted in importance. 
 \end{flushleft}
-\vspace{-4ex}
+\vspace{-3ex}
 \begin{figure}[H]
  \includegraphics[width=0.8\textwidth]{Graphs/regularization_vs_model_performance_cumu_Heterogeneous.pdf}
 \end{figure}
 
 
 
-\vspace{-3ex}
+\newpage
 \section{Baseline 5: Learning Rate vs Model Performance}
 \begin{flushleft}
 We want to measure the effect of using different learning rates to see which leads to better convergence when max-iterations are set to 1000.
@@ -199,13 +203,19 @@ We want to measure the effect of using different learning rates to see which lea
  \includegraphics[width=0.8\textwidth]{Graphs/lr_vs_model_performance_cumu_Heterogeneous.pdf}
 \end{figure}
 
-\vspace{1ex}
+\newpage
 \section{Baseline 6: Model Performance on mixed Set (Cluster 1 + Cluster 2)}
 \begin{flushleft}
 We want to measure how well the model would perform when an article from an unseen topic arrives along with articles from the original topic the classifier was trained on
 \end{flushleft}
 \begin{figure}[H]
  \includegraphics[width=0.8\textwidth]{Graphs/user_interaction_vs_model_performance_cumu_mixed_cluster.pdf}
+\end{figure}
+\begin{figure}[H]
+ \includegraphics[width=1.0\textwidth]{Graphs/user_interaction_vs_model_performance_precision_all_cps_mixed_data_Homogeneous.pdf}
+\end{figure}
+\begin{figure}[H]
+ \includegraphics[width=1.0\textwidth]{Graphs/user_interaction_vs_model_performance_precision_all_cps_mixed_data_Heterogeneous.pdf}
 \end{figure}
 
 \vspace{1ex}
