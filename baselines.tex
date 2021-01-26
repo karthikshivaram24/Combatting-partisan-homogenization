@@ -1,6 +1,13 @@
-\documentclass[a4paper,fontsize=9.0pt]{scrartcl}
+\documentclass[a4paper,fontsize=8.0pt]{scrartcl}
 \usepackage{float}
 % \usepackage[10pt]{extsizes}
+\usepackage{color}   %May be necessary if you want to color links
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true, %set true if you want colored links
+    linktoc=all,     %set to all if you want both sections and subsections linked
+    linkcolor=blue,  %choose some color if you want links to stand out
+}
 \usepackage[utf8]{inputenc}
 \usepackage[margin=0.9in]{geometry}
 \usepackage{titling}
@@ -14,7 +21,10 @@
 \maketitle
 
 \tableofcontents
-
+\newpage
+\section{Introduction}
+\section{Problem Statement}
+\section{Possible Solutions}
 \newpage
 \section{General Experiment Settings}
 \textbf{github-url} : https://github.com/karthikshivaram24/Combatting-partisan-homogenization
@@ -49,6 +59,7 @@
 \begin{figure}[H]
  \centering
  \includegraphics[width=1.0\textwidth]{Graphs/cluster_size_dist.pdf}
+ \caption{Cluster Size Distribution}
 \end{figure}
 \end{flushleft}
 
@@ -60,8 +71,9 @@ Here we want to measure how well a recommendation system performs on an unseen t
 \end{flushleft}
 \vspace{-5ex}
 \begin{figure}[H]
-%  \centering
+ \centering
  \includegraphics[width=0.8\textwidth]{Graphs/cluster_sim_vs_model_perf_5.pdf}
+ \caption{\textbf{Cosine Similarity between Cluster/Topic Pairs vs F1, Precision, Recall and Accuracy.The models are trained on cluster 1 and metrics are measured on cluster 2 which is used as a test set}}
 \end{figure}
 \subsection{Observations :}
 \begin{flushleft}
