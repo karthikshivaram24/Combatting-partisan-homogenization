@@ -3,6 +3,19 @@ from sklearn import metrics
 from config import RANDOM_SEED
 from collections import defaultdict
 
+
+def calculate_masked_avg(act_arr,mask_array,cluster_=1):
+    """
+    """
+    mask_const = None
+    if cluster_ == 1:
+        mask_const = 2
+    else:
+        mask_const = 1
+        
+    masked_actual = np.ma.masked_where(mask_array==mask_const,act_arr)
+    return np.ma.mean(masked_actual)
+
 def calculate_avg_precision_param_variation(scores_,params,mode="single"):
     """
     """
@@ -14,8 +27,12 @@ def calculate_avg_precision_param_variation(scores_,params,mode="single"):
         for cp in scores_:
             avg_prescision.append(np.mean(scores_[cp][str(param)]["precision"]))
             if mode == "mixed":
-                c1_avg_precision.append(np.mean(scores_[cp][str(param)]["precision_c1"]))
-                c2_avg_precision.append(np.mean(scores_[cp][str(param)]["precision_c2"]))
+#                 c1_avg_precision.append(np.mean(scores_[cp][str(param)]["precision_c1"]))
+                c1_avg_precision.append(calculate_masked_avg(act_arr = scores_[cp][str(param)]["precision_c1"], 
+                                                             mask_array=scores_[cp][str(param)]["which_cluster"],cluster_=1))
+#                 c2_avg_precision.append(np.mean(scores_[cp][str(param)]["precision_c2"]))
+                c2_avg_precision.append(calculate_masked_avg(act_arr = scores_[cp][str(param)]["precision_c2"], 
+                                                             mask_array=scores_[cp][str(param)]["which_cluster"],cluster_=2))
         
         param_results[param]["avg_precision"] = avg_prescision
         
@@ -48,8 +65,12 @@ def calculate_avg_precision(scores_,mode="single"):
     for cp in scores_:
         avg_prescision.append(np.mean(scores_[cp]["logistic_regression"]["precision"]))
         if mode == "mixed":
-            c1_avg_precision.append(np.mean(scores_[cp]["logistic_regression"]["precision_c1"]))
-            c2_avg_precision.append(np.mean(scores_[cp]["logistic_regression"]["precision_c2"]))
+#             c1_avg_precision.append(np.mean(scores_[cp]["logistic_regression"]["precision_c1"]))
+            c1_avg_precision.append(calculate_masked_avg(act_arr = scores_[cp]["logistic_regression"]["precision_c1"], 
+                                                             mask_array=scores_[cp]["logistic_regression"]["which_cluster"],cluster_=1))
+#             c2_avg_precision.append(np.mean(scores_[cp]["logistic_regression"]["precision_c2"]))
+            c2_avg_precision.append(calculate_masked_avg(act_arr = scores_[cp]["logistic_regression"]["precision_c2"], 
+                                                             mask_array=scores_[cp]["logistic_regression"]["which_cluster"],cluster_=2))
             
     if mode == "single":
         return avg_prescision
