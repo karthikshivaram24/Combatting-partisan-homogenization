@@ -31,6 +31,15 @@ def tokenize_bert(text_batch,tokenizer):
                                                           for text in text_batch])
     tokenized_tensor = tokenized_tensor.to('cuda')
     return tokenized_tensor
+
+def tokenize_bert_single_token(token_batch,tokenizer):
+    """
+    """
+    tokenized_tensor = torch.LongTensor([tokenizer.encode(token, 
+                                                          add_special_tokens=False)  # Add [CLS] and [SEP],) 
+                                                          for token in token_batch])
+    tokenized_tensor = tokenized_tensor.to('cuda')
+    return tokenized_tensor
         
 def batch_text_gen(text_list,batch_size=500):
     """

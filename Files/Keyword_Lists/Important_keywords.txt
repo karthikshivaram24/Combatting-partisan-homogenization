@@ -1,0 +1,562 @@
+1) Manual Identification :
+---------------------------
+
+Here i analyzed top most frequent terms across all conservative / liberal documents and for individual cluster's/topics as well.
+To find words that i think were indicative of stance.
+
+
+Conservative - Topic Specific (Checked 3 clusters)
+
+1) claims
+2) policies
+3) investigating
+4) accusations
+
+1) airstrike  
+2) freedom  
+3) democrats  
+4) embargo  
+5) hezbollah
+6) rebels
+
+1) dollars
+2) democracy
+3) risk
+4) crackdown
+
+
+Liberal - Topic Specific (Checked 3 Clusters)
+
+1) scandal  
+2) complaint  
+3) treason  
+4) violation  
+5) conservative 
+
+1) threatened
+2) casualties
+3) evidence
+4) family
+5) victims
+
+1) construction
+2) attack
+3) authoritarian
+4) capital
+
+
+2) Classifier Based Identification :
+-------------------------------------
+
+2.1) Words Indicative of Conservative Stance Across Multiple Topics/ Clusters:
+------------------------------------------------------------------------------
+
+File : https://docs.google.com/spreadsheets/d/1YIhwPWgsV2-rhDEiH3JFc6Euzz-BRQFaDF7FXUo-2Ow/edit?usp=sharing
+
+* capital
+* immoral
+* moderated
+* constitute
+* nefarious
+* smuggling
+* trafficked
+* adopting
+* whipped
+* revenue
+* forgivable
+* indispensable
+* communist
+
+2.2) Words Indicative of Liberal Stance Across Multiple Topics/ Clusters:
+-------------------------------------------------------------------------
+
+File : https://docs.google.com/spreadsheets/d/1v8PcH8WgO1hLrKNTO8fpS43TmY2fvM8PTkq7ZpvsBHM/edit?usp=sharing
+
+* reunite
+* apologizing
+* inspection
+* departures
+* outstanding
+* expelled
+* upheaval
+* impeach
+* submission
+* handguns
+* christchurch
+* diversity
+* parliament
+* expose
+* accusing
+* underestimated
+* predatory
+* sobering
+* casualty
+
+
+
+2.3) Words Indicative of Conservative Stance for individual Topics :
+---------------------------------------------------------------------
+
+File : https://docs.google.com/spreadsheets/d/1YK6Z-p4WzWJBjru7ZGyZOWULpRGBMjZQi6uI4VwNO-c/edit?usp=sharing
+
+931:
+provoked
+socialite
+unleashing
+doomed
+orchestrated
+cripple
+crumbling
+manipulate
+revolutionary
+dominated
+severity
+detection
+watchdog
+impede
+colonial
+sovereign
+forbidding
+barbaric
+misogyny
+retaliate
+campaigns
+employing
+
+70:
+cinematic
+unfit
+geopolitical
+incite
+colonies
+positioning
+surpasses
+rigged
+penalty
+surplus
+morality
+persuaded
+retaliate
+discredited
+thugs
+destroying
+appointee
+evacuations
+unchecked
+bombs
+mourned
+pardons
+vetting
+
+423:
+easiest
+console
+unequal
+persistently
+mandates
+broward
+unofficial
+comprise
+impeachable
+discontent
+empowerment
+sexist
+extension
+embraced
+precursor
+resist
+extradited
+infiltrated
+reviewed
+perpetuating
+
+939:
+appreciation
+severity
+employing
+underestimated
+setback
+emergencies
+oppressive
+implications
+mayoral
+emblematic
+criticisms
+synagogue
+rallying
+entitlement
+affordable
+hypocrisy
+pessimistic
+trooper
+inexcusable
+prosecute
+
+942:
+instructing
+morality
+militant
+empowering
+governed
+aiding
+homicides
+marketed
+accessing
+intimidation
+
+272:
+borough
+doused
+undermined
+punishments
+grind
+impoverished
+extradited
+unlawfully
+meticulously
+betrayal
+
+305:
+revolutionary
+pocketed
+radically
+takedown
+collective
+whistleblowers
+extremists
+crackdown
+monetary
+omissions
+unease
+
+338:
+culminated
+contingency
+pardoned
+temper
+acquitted
+delaying
+deception
+scams
+mourned
+supremacy
+referendum
+gravely
+
+498:
+unstable
+conservative
+emphasized
+regulator
+extremists
+incompetence
+supportive
+benefit
+flanked
+incoherent
+sensitive
+applauded
+estranged
+condemns
+counselor
+
+308:
+prudent
+christians
+addicted
+legislative
+unfit
+export
+crackdown
+oversight
+predatory
+propelled
+capitalize
+ratified
+bolstering
+oppressive
+imposition
+
+437:
+curfew
+unthinkable
+retaliate
+hatched
+resurgence
+gritty
+unease
+impeachable
+consuming
+grueling
+expectancy
+namesake
+
+121:
+treason
+clearance
+endured
+roasted
+negotiation
+implication
+compel
+exert
+influences
+displacement
+eponymous
+incompetence
+compelling
+
+187:
+unmarked
+unfit
+grievance
+regulation
+imperative
+capitalist
+irreparable
+screwed
+restitution
+
+735:
+propelled
+technological
+tossing
+homeowner
+distinction
+proactively
+initiatives
+counterterrorism
+starving
+mandates
+radically
+
+
+2.4) Words Indicative of Liberal Stance for individual Topics:
+--------------------------------------------------------------
+
+File : https://docs.google.com/spreadsheets/d/1Xf_ThrYZ381ZtJEdWRcK1WP_lLFHQsZ-2mj3ZZM17vs/edit?usp=sharing
+
+
+931:
+artificially
+mandates
+unregistered
+drastic
+pretending
+violently
+examined
+expectancy
+exit
+
+70:
+constituency
+dictate
+substance
+surrender
+firearm
+capitalist
+anticipation
+legislatures
+identified
+accumulate
+expectancy
+propelled
+rein
+severity
+
+423:
+fund
+antisemitism
+penalty
+furlough
+implication
+christians
+revelation
+crossfire
+gays
+explosives
+populations
+standardized
+
+939:
+anarchy
+impeachable
+narrator
+encouraged
+preached
+estranged
+contracting
+behavior
+hostage
+damning
+adapt
+federal
+fault
+gender
+shutdown
+urban
+hanged
+
+942:
+womb
+lending
+counterpart
+impoverished
+gunman
+authoritarian
+constituent
+trooper
+pistol
+impede
+culpability
+exemptions
+recruited
+
+272:
+firearm
+rhetorical
+corroborated
+adopting
+falsifying
+siege
+attendants
+conspirators
+designate
+crackdown
+rein
+loomed
+
+305:
+consortium
+nightmare
+chastised
+powerhouse
+pessimistic
+unfit
+dictatorship
+unredacted
+infusion
+brokered
+defraud
+suffering
+downfall
+vehemently
+censored
+
+338:
+admonished
+impeachable
+shooting
+damning
+relevant
+revenue
+maintaining
+referencing
+uneasy
+crackdown
+blistering
+overdue
+accidental
+alignment
+massacres
+rhetorical
+
+498:
+politicized
+negotiators
+morality
+rein
+instituted
+disgrace
+traumatic
+dubious
+betrayal
+replacements
+arrangement
+lobbyists
+hostilities
+amplify
+victim
+extensions
+
+308:
+hazardous
+socialite
+impropriety
+meltdown
+punishments
+patently
+severity
+firearms
+regulator
+unsurprising
+detentions
+executions
+supremacy
+affidavit
+indispensable
+conclusions
+troop
+
+437:
+profound
+whipping
+prioritizing
+wrestled
+justification
+resonated
+preliminary
+resigning
+adversary
+acquisition
+spark
+reconsider
+
+121:
+anchorage
+abusers
+pro
+wrongfully
+crowdstrike
+populist
+earmarked
+utmost
+surprises
+apolitical
+nonsensical
+pardons
+christians
+administrators
+anticipation
+handcuffed
+
+187:
+capitalize
+centrist
+abusers
+autonomous
+powerhouse
+unfolded
+retaliate
+extremists
+militarized
+scorching
+fueling
+weaponized
+registered
+
+735:
+apolitical
+tolerated
+storied
+inquiries
+alignment
+abduction
+forbids
+elites
+positioning
+traitor
+grueling
+deranged
+rob
+turnout
