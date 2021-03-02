@@ -51,7 +51,9 @@ def sample_data(df,sample_size=100000,seed=RANDOM_SEED):
     ---------
     Pandas Dataframe
     """
-    return df.sample(n=sample_size, replace=False, random_state=seed)
+    df_out = df.sample(n=sample_size, replace=False, random_state=seed)
+    df_out.reset_index(drop=True,inplace=True)
+    return df_out
 
 def balanced_sampling(labels):
     """
