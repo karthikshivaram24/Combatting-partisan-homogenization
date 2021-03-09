@@ -45,14 +45,22 @@ def calculate_avg_precision_param_variation(scores_,params,mode="single"):
 def calculate_map_param_variation(param_results,mode="single"):
     """
     """
+    results_dict = defaultdict(lambda : defaultdict(float))
     for param in param_results:
         print("\nParam : %s" %str(param))
         print(np.mean(param_results[param]["avg_precision"]))
+        results_dict[param]["avg_precision"] = np.mean(param_results[param]["avg_precision"])
         if mode == "mixed":
             print("c1 MAP : \n%s"%str(np.mean(param_results[param]["c1_avg_precision"])))
+            results_dict[param]["c1_avg_precision"] = np.mean(param_results[param]["c1_avg_precision"])
             print("c2 MAP : \n%s"%str(np.mean(param_results[param]["c2_avg_precision"])))
+            results_dict[param]["c2_avg_precision"] = np.mean(param_results[param]["c2_avg_precision"])
+        else:
+            results_dict[param]["c1_avg_precision"] = np.nan
+            results_dict[param]["c2_avg_precision"] = np.nan
             
-
+    return results_dict
+    
 def calculate_avg_precision(scores_,mode="single"):
     """
     Calculates Average Precision for a given Cluster Pair, here each 

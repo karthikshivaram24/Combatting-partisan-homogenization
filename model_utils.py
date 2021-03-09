@@ -2,6 +2,7 @@ from general_utils import timer
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import LogisticRegressionCV,SGDClassifier,PassiveAggressiveClassifier
 from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import numpy as np
 from metrics_utils import get_scores, get_scores_wot
@@ -10,10 +11,13 @@ from config import RANDOM_SEED
 from collections import defaultdict, Counter
 import copy
 
-@timer
 def run_model(x_train,x_test,y_train,y_test,seed=RANDOM_SEED):
     """
     """
+    scaler = StandardScaler()
+    scaler.fit(x_train)
+    x_train = scaler.transform(x_train)
+    x_test = scaler.transform(x_test)
     clf = LogisticRegressionCV(cv=5,random_state=seed,max_iter=1000,n_jobs=-1,class_weight="balanced").fit(x_train, y_train)
     predicted_probas = clf.predict_proba(x_test)
     return clf,predicted_probas
@@ -28,7 +32,7 @@ def run_bs1_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,thresholds
     """
     results = defaultdict(list)
     for index,cp in enumerate(cluster_pairs):
-            print("Training model for cluster pair : %s" %str(index))
+#             print("Training model for cluster pair : %s" %str(index))
             x_train,x_test,y_train,y_test,cluster_1_doc_indices,cluster_2_doc_indices = create_train_test(cluster_pair=cp,
                                                               cluster2doc=cluster_2_doc_map,
                                                               X_feats=X,
@@ -61,14 +65,17 @@ def run_online_setting_active(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,us
     cp_scores_map = {}
     
     for index,cp in enumerate(cluster_pairs):
-        print("Training model for cluster pair : %s" %str(index))
+#         print("Training model for cluster pair : %s" %str(index))
         x_train,x_test,y_train,y_test,cluster_1_doc_indices,cluster_2_doc_indices = create_train_test(cluster_pair=cp,
                                                           cluster2doc=cluster_2_doc_map,
                                                           X_feats=X,
                                                           df=df,
                                                           user_type=user_type)
         
-        
+        scaler = StandardScaler()
+        scaler.fit(x_train)
+        x_train = scaler.transform(x_train)
+        x_test = scaler.transform(x_test)
         # Initial Training on Cluster 1
         estimators = [SGDClassifier()]
         all_param_grids = {0:{"loss":["log"],
@@ -141,13 +148,17 @@ def run_bs2_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,user_type=
     cp_scores_map = {}
     results_df_map = {}
     for index,cp in enumerate(cluster_pairs):
-        print("Training model for cluster pair : %s" %str(cp))
+#         print("Training model for cluster pair : %s" %str(cp))
         x_train,x_test,y_train,y_test,cluster_1_doc_indices,cluster_2_doc_indices = create_train_test(cluster_pair=cp,
                                                           cluster2doc=cluster_2_doc_map,
                                                           X_feats=X,
                                                           df=df,
                                                           user_type=user_type)
         
+        scaler = StandardScaler()
+        scaler.fit(x_train)
+        x_train = scaler.transform(x_train)
+        x_test = scaler.transform(x_test)
         # Initial Training on Cluster 1
         estimators = [SGDClassifier()]
         all_param_grids = {0:{"loss":["log"],
@@ -214,13 +225,13 @@ def run_bs2_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,user_type=
                 scores_map[model]["precision"].append(precision)
                 scores_map[model]["recall"].append(recall)
         
-        df_temp = pd.DataFrame()
-        df_temp["Shown at K"] = y_preds
-        df_temp["Recall at K"] = scores_map[model]["recall"]
-        df_temp["Precision at K"] = scores_map[model]["precision"]
-        results_df_map[cp] = df_temp
+#         df_temp = pd.DataFrame()
+#         df_temp["Shown at K"] = y_preds
+#         df_temp["Recall at K"] = scores_map[model]["recall"]
+#         df_temp["Precision at K"] = scores_map[model]["precision"]
+#         results_df_map[cp] = df_temp
         cp_scores_map[cp] = scores_map
-    return cp_scores_map, results_df_map
+    return cp_scores_map
 
 
 
@@ -235,7 +246,7 @@ def run_bs3_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,cluster_2_
     cp_scores_map = {}
     N=200
     for index,cp in enumerate(cluster_pairs):
-        print("Training model for cluster pair : %s" %str(index))
+#         print("Training model for cluster pair : %s" %str(index))
         x_train,x_test,y_train,y_test,cluster_1_doc_indices,cluster_2_doc_indices = create_train_test(cluster_pair=cp,
                                                           cluster2doc=cluster_2_doc_map,
                                                           X_feats=X,
@@ -253,7 +264,10 @@ def run_bs3_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,cluster_2_
                                                                 random_state=RANDOM_SEED,
                                                                 shuffle=True,
                                                                 stratify=y_train)
-        
+        scaler = StandardScaler()
+        scaler.fit(x_bootstrap)
+        x_bootstrap = scaler.transform(x_bootstrap)
+        x_cp = scaler.transform(x_cp)
         # Initial Training on Cluster 1
         estimators = [SGDClassifier()]
         all_param_grids = {0:{"loss":["log"],
@@ -329,7 +343,7 @@ def run_bs4_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
     cp_scores_map = {}
     N=100
     for index,cp in enumerate(cluster_pairs):
-        print("Training model for cluster pair : %s" %str(index))
+#         print("Training model for cluster pair : %s" %str(index))
         x_train,x_test,y_train,y_test,cluster_1_doc_indices,cluster_2_doc_indices = create_train_test(cluster_pair=cp,
                                                           cluster2doc=cluster_2_doc_map,
                                                           X_feats=X,
@@ -337,6 +351,12 @@ def run_bs4_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                                                           user_type=user_type)
         
         scores_map = defaultdict(lambda : defaultdict(list))
+        
+        scaler = StandardScaler()
+        scaler.fit(x_train)
+        x_train = scaler.transform(x_train)
+        x_test = scaler.transform(x_test)
+        
         for regc in reg_constants:
             
             clf = None
@@ -394,7 +414,7 @@ def run_bs4_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
     return cp_scores_map
 
 @timer
-def run_bs5_train_all(X,sample_df,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
+def run_bs5_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                                  user_type="Heterogeneous",
                                  lr=[0.001,0.01,0.1,1.0,10],debug=False):
     """
@@ -403,7 +423,7 @@ def run_bs5_train_all(X,sample_df,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
     results_df_map_100 = {}
     results_df_map_500 = {}
     for index,cp in enumerate(cluster_pairs):
-        print("Training model for cluster pair : %s" %str(index))
+#         print("Training model for cluster pair : %s" %str(index))
         x_train,x_test,y_train,y_test,cluster_1_doc_indices,cluster_2_doc_indices = create_train_test(cluster_pair=cp,
                                                           cluster2doc=cluster_2_doc_map,
                                                           X_feats=X,
@@ -412,10 +432,14 @@ def run_bs5_train_all(X,sample_df,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
         
         # check 
         scores_map = defaultdict(lambda : defaultdict(list))
+        scaler = StandardScaler()
+        scaler.fit(x_train)
+        x_train = scaler.transform(x_train)
+        x_test = scaler.transform(x_test)
         for l_r in lr:
-            print("\n*************** CP = %s , LR = %s ****************" %(str(cp),str(l_r)))
+#             print("\n*************** CP = %s , LR = %s ****************" %(str(cp),str(l_r)))
             clf = SGDClassifier(loss="log",penalty="l2",eta0=l_r,learning_rate="constant",random_state=RANDOM_SEED)
-            print(str(clf))
+#             print(str(clf))
             clf.fit(x_train,y_train)
             
             
@@ -423,7 +447,7 @@ def run_bs5_train_all(X,sample_df,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
             total_interactions = 200
             liked_docs_recommended = 0
             y_preds = []
-            y_pred_text = []
+#             y_pred_text = []
             candidate_pool_x = copy.deepcopy(x_test)
             candidate_pool_y = copy.deepcopy(y_test)
 
@@ -434,7 +458,7 @@ def run_bs5_train_all(X,sample_df,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                 top_index = rank_indices[-1]
                 pred_verdict = candidate_pool_y[top_index]
                 y_preds.append(pred_verdict)
-                y_pred_text.append(sample_df["processed_text"].iloc[cluster_2_doc_indices[top_index]])
+#                 y_pred_text.append(sample_df["processed_text"].iloc[cluster_2_doc_indices[top_index]])
                     
                 
                 # update the model 
@@ -460,26 +484,26 @@ def run_bs5_train_all(X,sample_df,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                 scores_map[str(l_r)]["f1"].append(f1)
                 scores_map[str(l_r)]["precision"].append(precision)
                 scores_map[str(l_r)]["recall"].append(recall)
-                scores_map[str(l_r)]["y_pred_text"] = y_pred_text
+#                 scores_map[str(l_r)]["y_pred_text"] = y_pred_text
                 
             clf = None
                 
         cp_scores_map[cp] = scores_map
-        df_temp = pd.DataFrame()
-        df_temp["Shown at K"] = y_preds
-        df_temp["Recall at K"] = scores_map["100"]["recall"]
-        df_temp["Precision at K"] = scores_map["100"]["precision"]
-        df_temp["Top Article"] = scores_map["100"]["y_pred_text"]
-        results_df_map_100[cp] = df_temp
+#         df_temp = pd.DataFrame()
+#         df_temp["Shown at K"] = y_preds
+#         df_temp["Recall at K"] = scores_map["100"]["recall"]
+#         df_temp["Precision at K"] = scores_map["100"]["precision"]
+#         df_temp["Top Article"] = scores_map["100"]["y_pred_text"]
+#         results_df_map_100[cp] = df_temp
         
-        df_temp = pd.DataFrame()
-        df_temp["Shown at K"] = y_preds
-        df_temp["Recall at K"] = scores_map["500"]["recall"]
-        df_temp["Precision at K"] = scores_map["500"]["precision"]
-        df_temp["Top Article"] = scores_map["500"]["y_pred_text"]
-        results_df_map_500[cp] = df_temp
+#         df_temp = pd.DataFrame()
+#         df_temp["Shown at K"] = y_preds
+#         df_temp["Recall at K"] = scores_map["500"]["recall"]
+#         df_temp["Precision at K"] = scores_map["500"]["precision"]
+#         df_temp["Top Article"] = scores_map["500"]["y_pred_text"]
+#         results_df_map_500[cp] = df_temp
         
-    return cp_scores_map,results_df_map_100,results_df_map_500
+    return cp_scores_map
 
 @timer
 def run_bs6_train_all(X,
@@ -493,7 +517,7 @@ def run_bs6_train_all(X,
     cp_scores_map = {}
     
     for index,cp in enumerate(cluster_pairs):
-        print("Training model for cluster pair : %s" %str(index))
+#         print("Training model for cluster pair : %s" %str(index))
         x_train,x_test,y_train,y_test,cluster_1_doc_indices,cluster_2_doc_indices = create_train_test(cluster_pair=cp,
                                                           cluster2doc=cluster_2_doc_map,
                                                           X_feats=X,
@@ -516,6 +540,12 @@ def run_bs6_train_all(X,
                                                     random_state=RANDOM_SEED,
                                                     shuffle=True,
                                                     stratify=y_test)
+        
+        scaler = StandardScaler()
+        scaler.fit(x_bootstrap)
+        x_bootstrap = scaler.transform(x_bootstrap)
+        x_train_cp = scaler.transform(x_train_cp)
+        x_test_cp = scaler.transform(x_test_cp)
         
         # Initial Training on Cluster 1
         estimators = [SGDClassifier()]
@@ -653,7 +683,7 @@ def run_bs7_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
     cp_scores_map = {}
     N=200
     for index,cp in enumerate(cluster_pairs):
-        print("Training model for cluster pair : %s" %str(index))
+#         print("Training model for cluster pair : %s" %str(index))
         x_train,x_test,y_train,y_test,cluster_1_doc_indices,cluster_2_doc_indices = create_train_test(cluster_pair=cp,
                                                           cluster2doc=cluster_2_doc_map,
                                                           X_feats=X,
@@ -676,6 +706,11 @@ def run_bs7_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                                                     random_state=RANDOM_SEED,
                                                     shuffle=True,
                                                     stratify=y_test)
+        scaler = StandardScaler()
+        scaler.fit(x_bootstrap)
+        x_bootstrap = scaler.transform(x_bootstrap)
+        x_train_cp = scaler.transform(x_train_cp)
+        x_test_cp = scaler.transform(x_test_cp)
         
         scores_map = defaultdict(lambda : defaultdict(list))
         for l_r in lr:

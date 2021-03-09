@@ -27,7 +27,7 @@ def tokenize_bert(text_batch,tokenizer):
                                                           truncation=True,
                                                           padding="max_length",
                                                           max_length=500, 
-                                                          add_special_tokens=True)  # Add [CLS] and [SEP],) 
+                                                          add_special_tokens=False)  # Add [CLS] and [SEP],) 
                                                           for text in text_batch])
     tokenized_tensor = tokenized_tensor.to('cuda')
     return tokenized_tensor
@@ -153,8 +153,7 @@ def infer_embed_test():
         print("Numpy Version :\n%s" %str(loaded_hs[0].cpu().numpy()))
 
 @timer
-def load_bert_output(folder1="/media/karthikshivaram/Extra_disk_1/Bert_model_outputs",
-                     folder2="/media/karthikshivaram/Extra_Disk_2/Bert_model_outputs",
+def load_bert_output(folder,
                      layer=12,
                      aggregation="mean"):
     """
@@ -212,11 +211,8 @@ def load_bert_output(folder1="/media/karthikshivaram/Extra_disk_1/Bert_model_out
         batch_agg_arr = np.mean(batch_layer_slice,axis=1)
         return batch_agg_arr
     
-    files1 = os.listdir(folder1)
-    files1 = [folder1 + os.path.sep+f for f in files1]
-    files2 = os.listdir(folder2)
-    files2 = [folder2 + os.path.sep+f for f in files2]
-    files = files1 + files2
+    files = os.listdir(folder)
+    files = [folder + os.path.sep+f for f in files]
     files = sorted(files,key=lambda x: int(x.split(os.path.sep)[-1].split(".")[0]),reverse=False)
     print("First Ten Files : %s" %str(files[:10]))
     
@@ -249,5 +245,9 @@ def load_bert_output(folder1="/media/karthikshivaram/Extra_disk_1/Bert_model_out
             
         if aggregation == "last 4 concat":
             pass
+        
+        if aggregation == None:
+            batch_layer_slice = get_batch_arr(file=f,layer=layer)
+            batch_outputs.append(batch_layer_slice)
     
     return np.concatenate(batch_outputs,axis=0)

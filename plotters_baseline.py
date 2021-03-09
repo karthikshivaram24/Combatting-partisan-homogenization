@@ -194,7 +194,7 @@ def bsl1_sim_vs_score_all_users(df_results_hetero,df_results_homo,threshold):
     plt.show()
     
 @timer
-def plot_regularization_vs_metrics_at_k(scores_,regularization_constants=[0.0001,0.001,0.01,0.1,1.0],user_type="Heterogeneous",single=True):
+def plot_regularization_vs_metrics_at_k(scores_,regularization_constants=[0.0001,0.001,0.01,0.1,1.0],user_type="Heterogeneous",single=True,savefolder="Graphs/TFIDF/"):
     """
     3 sub plots for each metric:
     In each subplot, k lines (one for every regularization setting used)
@@ -231,11 +231,11 @@ def plot_regularization_vs_metrics_at_k(scores_,regularization_constants=[0.0001
     if single:
         fig.suptitle("Regularization Constant vs Model Performance (Metrics @K) | Random Single Cluster Pair --> %s" %str(user_type))
         fig.tight_layout()
-        fig.savefig("Graphs/regularization_vs_model_performance_single_%s.pdf" %str(user_type))
+        fig.savefig(savefolder+"regularization_vs_model_performance_single_%s.pdf" %str(user_type))
     else:
         fig.suptitle("Regularization Constant vs Model Performance (Metrics @K) | Cumulative Performance across all Cluster Pairs --> %s" %str(user_type))
         fig.tight_layout()
-        fig.savefig("Graphs/regularization_vs_model_performance_cumu_%s.pdf"%str(user_type))
+        fig.savefig(savefolder+"regularization_vs_model_performance_cumu_%s.pdf"%str(user_type))
     
     plt.show()
     
@@ -345,7 +345,7 @@ def plot_lr_vs_metrics_at_k_cumu(scores_,user_type="Heterogeneous",lr=[0.0001,0.
 # --------
     
 @timer
-def plot_online_setting_per_clusterpair(scores_homo,scores_hetero,active=True,single=True):
+def plot_online_setting_per_clusterpair(scores_homo,scores_hetero,active=True,single=True,savefolder="Graphs/TFIDF/"):
     """
     We have to plot:
     1) N vs score for both users
@@ -417,21 +417,21 @@ def plot_online_setting_per_clusterpair(scores_homo,scores_hetero,active=True,si
         if single:
             fig.suptitle("Online Learning Setting :(Using Validation Set) | Random Single Cluster Pair")
             fig.tight_layout()
-            fig.savefig("Graphs/user_interaction_vs_model_performance_using_val.pdf")
+            fig.savefig(savefolder+"user_interaction_vs_model_performance_using_val.pdf")
         else:
             fig.suptitle("Online Learning Setting :(Using Validation Set) | Cumulative Performance across all Cluster Pairs")
             fig.tight_layout()
-            fig.savefig("Graphs/user_interaction_vs_model_performance_using_val_cumu.pdf")
+            fig.savefig(savefolder+"user_interaction_vs_model_performance_using_val_cumu.pdf")
     
     if not active:
         if single:
             fig.suptitle("Online Learning Setting: (Metrics @K) | Random Single Cluster Pair")
             fig.tight_layout()
-            fig.savefig("Graphs/user_interaction_vs_model_performance.pdf")
+            fig.savefig(savefolder+"user_interaction_vs_model_performance.pdf")
         else:
             fig.suptitle("Online Learning Setting: (Metrics @K) | Cumulative Performance across all Cluster Pairs")
             fig.tight_layout()
-            fig.savefig("Graphs/user_interaction_vs_model_performance_cumu.pdf")
+            fig.savefig(savefolder+"user_interaction_vs_model_performance_cumu.pdf")
             
     plt.show()
 
@@ -442,7 +442,7 @@ def plot_helper_all_cp(x1,y1,ax,color,cp,marker="*",s=50):
 #     sns.regplot(x=np.array(x1), y=np.array(y1),ax=ax,color=color)
 
 @timer
-def plot_all_cp_online(scores_cp,user_type,metric="precision"):
+def plot_all_cp_online(scores_cp,user_type,metric="precision",savefolder="Graphs/TFIDF/"):
     """
     """
     fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(20,10))
@@ -469,13 +469,13 @@ def plot_all_cp_online(scores_cp,user_type,metric="precision"):
     axes.set_ylim(0.0,1.0)
     fig.suptitle("%s | %s" %(metric.upper(),user_type))
     fig.tight_layout()
-    fig.savefig("Graphs/user_interaction_vs_model_performance_precision_all_cps_%s.pdf" %str(user_type))
+    fig.savefig(savefolder+"user_interaction_vs_model_performance_precision_all_cps_%s.pdf" %str(user_type))
     plt.show()
     
     pass
 
 @timer
-def plot_all_cp_singlecluster(scores_cp,metric="precision"):
+def plot_all_cp_singlecluster(scores_cp,metric="precision",savefolder="Graphs/TFIDF/"):
     """
     """
     fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(20,10))
@@ -502,7 +502,7 @@ def plot_all_cp_singlecluster(scores_cp,metric="precision"):
     axes.set_ylim(0.0,1.0)
     fig.suptitle("%s | %s" %(metric.upper(),"Single Cluster Performance"))
     fig.tight_layout()
-    fig.savefig("Graphs/user_interaction_vs_model_performance_precision_all_cps_single_cluster.pdf")
+    fig.savefig(savefolder+"user_interaction_vs_model_performance_precision_all_cps_single_cluster.pdf")
     plt.show()
     
 
@@ -518,7 +518,7 @@ def plot_helper_scp(x1,x2,y1,y2,ax,ax_index,marker="*",s=50):
     ax[ax_index].legend(loc="upper right")
     
 @timer
-def plot_single_cluster_performance(scores_homo,scores_hetero,single=True):
+def plot_single_cluster_performance(scores_homo,scores_hetero,single=True,savefolder="Graphs/TFIDF/"):
     """
     """
     fig,ax = plt.subplots(nrows=2,ncols=2,figsize=(15,15))
@@ -565,11 +565,11 @@ def plot_single_cluster_performance(scores_homo,scores_hetero,single=True):
     if single:
         fig.suptitle("Single Cluster Performance: (Metrics @K) | Random Single Cluster Pair")
         fig.tight_layout()
-        fig.savefig("Graphs/user_interaction_vs_model_performance_single_cluster.pdf")
+        fig.savefig(savefolder+"user_interaction_vs_model_performance_single_cluster.pdf")
     else:
         fig.suptitle("Single Cluster Performance: (Metrics @K) | Cumulative Performance across all Cluster Pairs")
         fig.tight_layout()
-        fig.savefig("Graphs/user_interaction_vs_model_performance_cumu_single_cluster.pdf")
+        fig.savefig(savefolder+"user_interaction_vs_model_performance_cumu_single_cluster.pdf")
     
     plt.show()
 
@@ -701,7 +701,7 @@ def plot_mixed_cluster_cumulative_per_cluster(scores_homo_cumulative,scores_hete
     
     
 @timer
-def plot_mixed_data_performance_per_cluster(scores_homo,scores_hetero,mask=True):
+def plot_mixed_data_performance_per_cluster(scores_homo,scores_hetero,mask=True,savefolder="Graphs/TFIDF/"):
     """
     """
     fig,ax = plt.subplots(nrows=2,ncols=2,figsize=(26,15))
@@ -799,11 +799,11 @@ def plot_mixed_data_performance_per_cluster(scores_homo,scores_hetero,mask=True)
     if mask == True:
         fig.suptitle("Mixed Cluster Performance: (Metrics @K) | Random Single Cluster Pair")
         fig.tight_layout()
-        fig.savefig("Graphs/user_interaction_vs_model_performance_mixed_cluster_single.pdf")
+        fig.savefig(savefolder+"user_interaction_vs_model_performance_mixed_cluster_single.pdf")
     else:
         fig.suptitle("Mixed Cluster Performance: (Metrics @K) | All Cluster Pairs")
         fig.tight_layout()
-        fig.savefig("Graphs/user_interaction_vs_model_performance_mixed_cluster_all.pdf")
+        fig.savefig(savefolder+"user_interaction_vs_model_performance_mixed_cluster_all.pdf")
     
     plt.show()
     
@@ -924,7 +924,7 @@ def plot_single_cluster_cumulative(scores_homo_cumulative,scores_hetero_cumulati
     
 
 @timer
-def plot_mixed_data_all_cp_perf(scores_cp,user_type,metric="precision"):
+def plot_mixed_data_all_cp_perf(scores_cp,user_type,metric="precision",savefolder="Graphs/TFIDF/"):
     """
     """
     fig,ax = plt.subplots(nrows=2,ncols=1,figsize=(20,10*2))
@@ -971,7 +971,7 @@ def plot_mixed_data_all_cp_perf(scores_cp,user_type,metric="precision"):
     axes[1].set_ylim(0.0,1.0)
     fig.suptitle("%s | %s -> %s" %(metric.upper(),"Mixed Data Performance",user_type))
     fig.tight_layout()
-    fig.savefig("Graphs/user_interaction_vs_model_performance_precision_all_cps_mixed_data_sep_%s.pdf"%str(user_type))
+    fig.savefig(savefolder+"user_interaction_vs_model_performance_precision_all_cps_mixed_data_sep_%s.pdf"%str(user_type))
     plt.show()
 
 def lr_mixed_plot_helper(x,y_c1,y_c2,which_cluster,clr,ax,marker,s=50,lr_score=0.001):
@@ -990,7 +990,7 @@ def lr_mixed_plot_helper(x,y_c1,y_c2,which_cluster,clr,ax,marker,s=50,lr_score=0
     
     
 @timer
-def plot_lr_vs_metrics_at_k_mixed(scores_,lr,user_type="Heterogeneous"):
+def plot_lr_vs_metrics_at_k_mixed(scores_,lr,user_type="Heterogeneous",savefolder="Graphs/TFIDF/"):
     """
     for precision:
     2 plots side by side , one for cluster1, one for cluster2
@@ -1029,7 +1029,7 @@ def plot_lr_vs_metrics_at_k_mixed(scores_,lr,user_type="Heterogeneous"):
     
     fig.suptitle("Learning Rate vs Model Performance (Metrics @K) | Performance for single cluster pair --> %s" %str(user_type))
     fig.tight_layout()
-    fig.savefig("Graphs/lr_vs_model_performance_single_mixed_%s.pdf"%str(user_type))
+    fig.savefig(savefolder+"lr_vs_model_performance_single_mixed_%s.pdf"%str(user_type))
     
     plt.show()
 

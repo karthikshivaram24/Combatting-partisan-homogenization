@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 print("....... Initializing Settings ..... ")
 
@@ -7,18 +8,19 @@ RANDOM_SEED = np.random.randint(low=1, high=100000, size=1)[0]
 print("Random_Seed Chosen : %s" %str(RANDOM_SEED))
 
 ROOT_FOLDER = ""
-EMBEDDING_TYPE = "Graphs/TFIDF/"
-
 
 #Clustering Settings
-NUM_CLUSTERS = 1000
-CLUSTER_MIN_SIZE = 500
-CLUSTER_MAX_SIZE = 5000
-MIN_PARTISAN_SIZE = 0.4
+num_clusters = 100
+min_cluster_size = 300
+max_cluster_size = 10000
+min_partisan_size = 0.4
 
 # TFIDF Settings
-MIN_DF = 30
-MAX_DF = 0.75
+min_df = 30
+max_df = 0.75
+
+lr_params = [0.001,0.01,0.1,1.0,10,15,20,50,100,500]
+rc_params = [0.0001,0.001,0.01,0.1,0.0,1.0,10.0,20.0,50.0,100.0]
 
 # EMBEDDING FILES
 GLOVE_PATH = ROOT_FOLDER + "Embeddings/glove.6B.300d.magnitude"

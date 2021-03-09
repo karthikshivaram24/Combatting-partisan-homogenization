@@ -4,7 +4,7 @@ from joblib import Parallel, delayed
 from nltk.tokenize import sent_tokenize, word_tokenize
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.decomposition import PCA, TruncatedSVD
-from config import RANDOM_SEED, MIN_DF, MAX_DF, GLOVE_PATH, W2V_PATH, ELMO_PATH, FASTTEXT_PATH
+from config import RANDOM_SEED, min_df, max_df, GLOVE_PATH, W2V_PATH, ELMO_PATH, FASTTEXT_PATH
 import re
 import pandas as pd
 from pymagnitude import *

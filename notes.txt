@@ -19,12 +19,22 @@ Mean Avg Precision = 4.48 + 3.654 / 2 =   8.134/2 = 4.067
 * run the notebooks for other bert layers
 
 
-TO-DO:
+TO-DO: Completed
+-----------------
 * Clustering analysis , are the clusters making sense ? (are they relevant to politics ?) - Done
 * Word Overlap from above - Done
+* Use Topic Classified Articles, use the topics as clusters - Done
+* What are the top overlapping terms ? - Done
+* Top coefficients from these classifiers - Done
+* Word Similarity vs Bert Layer - Done
 
-
-* Use Topic Classified Articles, use the topics as clusters
-* What are the top overlapping terms ?
-* Top coefficients from these classifiers
-* Word Similarity vs Bert Layer
+To-Do:
+------
+* Redo code so we can run baselines without graph creation and with score retention
+* Run baselines for new data with scaling
+* Run baselines for bert with no context and with context for only layer 12 with scaling
+* How do we vary contextualization within a given layer
+    * we know how to do it in the extreme case
+    * if we want a knob effect:
+        * sample a percentage of words and decontextualize
+        * sample a percentage of words and decontextualize only those reps
