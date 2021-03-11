@@ -72,6 +72,8 @@ plot_lr_vs_metrics_at_k_cumu(hetero_scores,
 * all the model runners need a scaling step involved - Done
 
 """
+import warnings
+warnings.filterwarnings("ignore")
 
 import config as CONFIG
 import model_utils
@@ -197,6 +199,9 @@ class BaselineRunner(object):
                 "df":self.data,
                 "cluster_pairs":self.top100_cps,
                 "cosine_mat":self.cluster_pair_dist_mat}
+        
+        if self.rep_type == "tf-idf":
+            kwargs["tf_idf"]=True
         
         if baseline_2_run in ["5","7"]:
             kwargs["lr"] = self.baseline_params_map[baseline_2_run]

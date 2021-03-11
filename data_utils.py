@@ -84,7 +84,7 @@ def balanced_sampling(labels):
     
     return res
 
-def create_train_test(cluster_pair,cluster2doc,X_feats,df,user_type="Heterogeneous"):
+def create_train_test(cluster_pair,cluster2doc,X_feats,df,user_type="Heterogeneous",tf_idf=False):
     """
     Labels are based on conservative when homogenous, or conservative on cluster 1 and liberal on cluster 2 if heterogeneous
     """
@@ -97,17 +97,31 @@ def create_train_test(cluster_pair,cluster2doc,X_feats,df,user_type="Heterogeneo
     x_train = X_feats[cluster_1_doc_indices]
     x_test = X_feats[cluster_2_doc_indices]
     
+#     print(x_train.shape)
+#     print(x_test.shape)
+    
     ps_train = df["binary_ps"].values[cluster_1_doc_indices]
     ps_test = df["binary_ps"].values[cluster_2_doc_indices]
     
     ps_train_indices_sample = balanced_sampling(ps_train)
     ps_test_indices_sample = balanced_sampling(ps_test)
     
-    x_train = np.take(x_train, ps_train_indices_sample, axis=0)
-    ps_train = np.take(ps_train,ps_train_indices_sample,axis=0)
+#     if tf_idf==False:
     
-    x_test = np.take(x_test, ps_test_indices_sample, axis=0)
-    ps_test = np.take(ps_test,ps_test_indices_sample,axis=0) 
+    x_train = np.take(x_train, indices=ps_train_indices_sample.tolist(), axis=0)
+    ps_train = np.take(ps_train,indices=ps_train_indices_sample.tolist(),axis=0)
+
+    x_test = np.take(x_test, indices=ps_test_indices_sample.tolist(), axis=0)
+    ps_test = np.take(ps_test,indices=ps_test_indices_sample.tolist(),axis=0) 
+    
+#     else:
+#         x_train = x_train[ps_train_indices_sample.tolist()]
+#         ps_train = np.take(ps_train,indices=ps_train_indices_sample.tolist(),axis=0)
+#         x_test = x_test[ps_test_indices_sample.tolist()]
+#         ps_test = np.take(ps_test,indices=ps_test_indices_sample.tolist(),axis=0) 
+        
+#         print(x_train.shape)
+#         print(x_test.shape)
     
     if user_type == "Heterogeneous":
         y_train = ps_train

@@ -7,6 +7,7 @@ from sklearn.decomposition import PCA, TruncatedSVD
 from config import RANDOM_SEED, min_df, max_df, GLOVE_PATH, W2V_PATH, ELMO_PATH, FASTTEXT_PATH
 import re
 import pandas as pd
+import string
 from pymagnitude import *
 
 @timer
@@ -35,7 +36,7 @@ def preprocess_texts(text_lists):
         return x.lower()
     
     def remove_punc(x):
-        return re.sub(r'[^\w\s]', '  ', x)
+        return x.translate(str.maketrans('', '', string.punctuation))
     
     def remove_small_words(x):
         return re.sub(r'\b\w{1,2}\b', '', x)
@@ -72,7 +73,7 @@ def tfidf_vectorization(df,min_df=30,max_df=0.75,seed=RANDOM_SEED):
     * tf_idf_vectorizer -> the vectorizer object 
     """
     df["all_text"] = df["title"] + " " + df["processed_text"]
-    tfidf_vectorizer = TfidfVectorizer(min_df=min_df, binary=False, max_df=max_df, stop_words='english')
+    tfidf_vectorizer = TfidfVectorizer(min_df=min_df, binary=False, max_df=max_df, stop_words='english',max_features=8000)
     vectors = tfidf_vectorizer.fit_transform(df["all_text"])
     vocab = tfidf_vectorizer.vocabulary_
     print("vocab_size : %s"%str(len(vocab)))

@@ -21,7 +21,8 @@ from bert_utils import load_model, load_tokenizer, batch_text_gen, tokenize_bert
 import torch
 import pickle
 from general_utils import timer
-
+import h5py
+import string
 
 
 
@@ -54,6 +55,22 @@ def load_pkl_file(file_path):
     print("Shape after dropping Neutral Articles : %s" %str(articles_df.shape))
     print(articles_df.columns)
     return articles_df
+
+def tokenize_bert_re_tok(text_batch,tokenizer):
+    """
+    """
+    tokenized_list = [tokenizer.encode(text.translate(str.maketrans('', '', string.punctuation)),
+                                       truncation=True,
+                                       padding="max_length",
+                                       max_length=500, 
+                                       add_special_tokens=False)  # Add [CLS] and [SEP],) 
+                                       for text in text_batch]
+    tokens_batch_list = [tokenizer.convert_ids_to_tokens(x) for x in tokenized_list]
+    
+    tokenized_tensor = torch.LongTensor(tokenized_list)
+    
+    tokenized_tensor = tokenized_tensor.to('cuda')
+    return tokenized_tensor,tokens_batch_list
 
 
 @timer
@@ -93,6 +110,57 @@ def save_and_infer_bert_embeddings(text_list,batch_size=50,save_path="/media/kar
     
     print("\nTotal Batches Saved : %s" %str(batch_no))
     print("Finished Inferring and saving Embeddings .....")
+
+@timer
+def save_and_infer_bert_embeddings_tokens(text_list,batch_size=50,save_path="/media/karthikshivaram/SABER_4TB"):
+    """
+    for token in article
+    * create a hdf5 dataset where you can add a row of representation
+    """
+    token_doc_map = defaultdict(lambda : defaultdict(list))
+    tokenizer = load_tokenizer()
+    model = load_model()
+    for article_id,article in enumerate(text_list):
+        article = article.translate(str.maketrans('', '', string.punctuation))
+        tokens,token_indices = get_tokens_from_bert_tokenizer(article,tokenizer)
+        for token_id , token in enumerate(tokens):
+            token_doc_map[token]["doc_ids"].append(article_id)
+            token_doc_map[token]["token_ind_in_doc"].append(token_indices[token_id])
+    
+    num_batches = int(len(text_list)/batch_size)
+    print("Number of Batches : %s\n"%str(num_batches))
+    
+    print("Number of tokens in Articles Set : %s" %len(token_doc_map.keys()))
+    
+    with h5py.File(save_path+"/token_bert_12_embeds.hdf5", "w") as f:
+        dset_map = {}
+        dset_map_writes = {}
+        for token in token_doc_map.keys():
+            
+            temp_dset = f.create_dataset("%s"%token,(len(token_doc_map[token]["doc_ids"]),768),dtype="float32")
+            dset_map[token]=temp_dset
+            dset_map_writes[token] = 0
+    
+        with torch.no_grad():
+            batch_no = 0
+            for text_batch in batch_text_gen(text_list,batch_size):
+                if batch_no > 0 and batch_no % 100 == 0:
+                    print("Running Batch : %s"%str(batch_no))
+                batch_tensor,batch_tokens = tokenize_bert_re_tok(text_batch,tokenizer)
+                batch_out = model(input_ids=batch_tensor)
+                batch_hidden_state = batch_out[2][-1] #layer 12 output
+                # shape would be (batch_size,max_length,768)
+                for a_id,article in enumerate(batch_tokens):
+                    for t_ind,token in enumerate(article):
+                        token_rep = batch_hidden_state[a_id,t_ind,:]
+                        if token != "[PAD]":
+                            dset_map[token][dset_map_writes[token]] = token_rep.cpu().numpy()
+                            dset_map_writes[token] +=1
+                
+                # Write to disk after every batch
+                f.flush()
+                batch_no+=1
+                
 
 @timer
 def load_embeddings_for_word_usecase(saved_path,batch_size,doc_indices,layer):
@@ -143,7 +211,8 @@ def get_tokens_from_bert_tokenizer(text,tokenizer):
     
     return actual_tokens,[i for i in range(len(actual_tokens))]
 
-def load_bert_with_cv(text_list,bert_reps,batch_size,layer,cv,aggregation):
+@timer
+def load_bert_with_cv(text_list,batch_size,layer,cv,aggregation,bert_token_file="/media/karthikshivaram/SABER_4TB/mean_token_reps.hdf5"):
     """
     steps:
     ------
@@ -153,39 +222,51 @@ def load_bert_with_cv(text_list,bert_reps,batch_size,layer,cv,aggregation):
     4) Average over these to get a map of token to representation
     5) build the representation for each document using the above by aggregation method
     """
-    token_doc_map = defaultdict(lambda : defaultdict(list))
-    token_bert_reps_in_doc_map = defaultdict(list)
-    token_reps = defaultdict()
+#     token_doc_map = defaultdict(lambda : defaultdict(list))
+#     token_bert_reps_in_doc_map = defaultdict(list)
+#     token_reps = defaultdict()
     article_reps = []
     
     tokenizer = load_tokenizer()
     
-    for article_id,article in enumerate(text_list):
-        tokens,token_indices = get_tokens_from_bert_tokenizer(article,tokenizer)
-        # ADD THE cv SAMPLING HERE
-        for token_id , token in enumerate(tokens):
-            start = token_indices[token_id]
-            token_bert_reps_in_doc_map[token].append(bert_reps[article_id,start,:])
-            
-    print("\nFinished BERT Tokenization")
+    bert_token_file = h5py.File(bert_token_file,'r')
+#     bert_token_keys = [f for f in bert_token_file.keys()]
+    bert_token_keys = defaultdict(int)
+    for f in bert_token_file.keys():
+        bert_token_keys[f] = 1
     
-    for token in token_bert_reps_in_doc_map.keys():
-        token_reps[token] = np.mean(token_bert_reps_in_doc_map[token],axis=0)
+#     for article_id,article in enumerate(text_list):
+#         tokens,token_indices = get_tokens_from_bert_tokenizer(article,tokenizer)
         
-    print("\nFinished Taking Means of token reps")
+#         # ADD THE cv SAMPLING HERE
+#         for token_id , token in enumerate(tokens):
+            
+#             start = token_indices[token_id]
+#             token_bert_reps_in_doc_map[token].append(bert_reps[article_id,start,:])
+            
+#     print("\nFinished BERT Tokenization")
+    
+#     for token in token_bert_reps_in_doc_map.keys():
+#         token_reps[token] = np.mean(token_bert_reps_in_doc_map[token],axis=0)
+        
+#     print("\nFinished Taking Means of token reps")
     
     for article_id,article in enumerate(text_list):
-        tokens,token_indices = get_tokens_from_bert_tokenizer(article)
+        if article_id >= 1000 and article_id % 1000 == 0:
+            print("Finished Processing %s article"%str(article_id))
+        tokens,token_indices = get_tokens_from_bert_tokenizer(article,tokenizer)
         article_rep = []
         for token in tokens:
-            article_rep.append(token_reps[token])
+            if bert_token_keys[token] == 1:
+                article_rep.append(bert_token_file.get(token))
         
-        article_rep = np.mean(article_rep)
+        article_rep = np.mean(article_rep,axis=0)
         article_reps.append(article_rep)
     
     print("\nFinished Taking Means for article reps")
+    bert_token_file.close()
     
-    return np.array(article_reps)
+    return np.concatenate(article_reps,axis=0)
 
 @timer
 def load_bert_embeddings(df,saved_path,batch_size,layer,context_var,aggregation="mean+max"):
@@ -211,12 +292,8 @@ def load_bert_embeddings(df,saved_path,batch_size,layer,context_var,aggregation=
     """
     
     if context_var != 100:
-        bert_mat = load_bert_output(folder=saved_path,
-                                    layer=layer,
-                                    aggregation=None)
         
         return load_bert_with_cv(text_list=df["all_text"].tolist(),
-                                 bert_reps=bert_mat,
                                  batch_size=batch_size,
                                  layer=layer,
                                  cv=context_var,
@@ -249,5 +326,17 @@ if __name__ == "__main__":
         sampled_df["all_text"] = sampled_df["title"]+ " " + sampled_df["processed_text"]
         sampled_df.to_csv("../sampled_articles_from_relevant_data.csv",index=False)
     
-    print("\nInferring Bert Embeddings for Sampled Dataset ......")
-    save_and_infer_bert_embeddings(text_list=sampled_df["all_text"].tolist(),batch_size=50,save_path="/media/karthikshivaram/SABER_4TB")
+#     print("\nInferring Bert Embeddings for Sampled Dataset ......")
+#     save_and_infer_bert_embeddings(text_list=sampled_df["all_text"].tolist(),batch_size=50,save_path="/media/karthikshivaram/SABER_4TB")
+    
+#     print("\nInferring Bert Embeddings at a token level ........")
+#     save_and_infer_bert_embeddings_tokens(text_list=sampled_df["all_text"].tolist(),batch_size=50,save_path="/media/karthikshivaram/SABER_4TB")
+    
+    print("\nSaving Mean Token Representations across Articles .........")
+    token_file = "/media/karthikshivaram/SABER_4TB/token_bert_12_embeds.hdf5"
+    with h5py.File(token_file,'r') as rp , h5py.File("/media/karthikshivaram/SABER_4TB/mean_token_reps.hdf5","w") as wp:
+        for token in rp.keys():
+            token_mean_vec = np.mean(rp.get(token),axis=0).reshape(1,-1)
+            token_dset = wp.create_dataset("%s"%token,data=token_mean_vec,dtype="float32")
+            
+        

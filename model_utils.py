@@ -11,13 +11,15 @@ from config import RANDOM_SEED
 from collections import defaultdict, Counter
 import copy
 
-def run_model(x_train,x_test,y_train,y_test,seed=RANDOM_SEED):
+def run_model(x_train,x_test,y_train,y_test,seed=RANDOM_SEED,tf_idf=False):
     """
     """
-    scaler = StandardScaler()
-    scaler.fit(x_train)
-    x_train = scaler.transform(x_train)
-    x_test = scaler.transform(x_test)
+    if tf_idf== False:
+        scaler = StandardScaler()
+        scaler.fit(x_train)
+        x_train = scaler.transform(x_train)
+        x_test = scaler.transform(x_test)
+
     clf = LogisticRegressionCV(cv=5,random_state=seed,max_iter=1000,n_jobs=-1,class_weight="balanced").fit(x_train, y_train)
     predicted_probas = clf.predict_proba(x_test)
     return clf,predicted_probas
@@ -25,7 +27,7 @@ def run_model(x_train,x_test,y_train,y_test,seed=RANDOM_SEED):
 
     
 @timer
-def run_bs1_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,thresholds = [0.5,0.7,0.9],user_type="Heterogeneous"):
+def run_bs1_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,thresholds = [0.5,0.7,0.9],user_type="Heterogeneous",tf_idf=False):
     """
     Runs the baseline1 setting where we want to detect how cluster similarity affects the recommender for 
     different user types - Not online setting
@@ -58,7 +60,7 @@ def run_bs1_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,thresholds
     return df_results
 
 @timer
-def run_online_setting_active(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,user_type="Heterogeneous"):
+def run_online_setting_active(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,user_type="Heterogeneous",tf_idf=False):
     """
     Performance measurement based on online + Active learning setting
     """
@@ -72,10 +74,11 @@ def run_online_setting_active(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,us
                                                           df=df,
                                                           user_type=user_type)
         
-        scaler = StandardScaler()
-        scaler.fit(x_train)
-        x_train = scaler.transform(x_train)
-        x_test = scaler.transform(x_test)
+        if tf_idf == False:
+            scaler = StandardScaler()
+            scaler.fit(x_train)
+            x_train = scaler.transform(x_train)
+            x_test = scaler.transform(x_test)
         # Initial Training on Cluster 1
         estimators = [SGDClassifier()]
         all_param_grids = {0:{"loss":["log"],
@@ -142,23 +145,25 @@ def run_online_setting_active(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,us
 
 
 @timer
-def run_bs2_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,user_type="Heterogeneous"):
+def run_bs2_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,user_type="Heterogeneous",tf_idf=False):
     """
     """
     cp_scores_map = {}
     results_df_map = {}
     for index,cp in enumerate(cluster_pairs):
 #         print("Training model for cluster pair : %s" %str(cp))
+        print(index)
         x_train,x_test,y_train,y_test,cluster_1_doc_indices,cluster_2_doc_indices = create_train_test(cluster_pair=cp,
                                                           cluster2doc=cluster_2_doc_map,
                                                           X_feats=X,
                                                           df=df,
                                                           user_type=user_type)
         
-        scaler = StandardScaler()
-        scaler.fit(x_train)
-        x_train = scaler.transform(x_train)
-        x_test = scaler.transform(x_test)
+        if tf_idf == False:
+            scaler = StandardScaler()
+            scaler.fit(x_train)
+            x_train = scaler.transform(x_train)
+            x_test = scaler.transform(x_test)
         # Initial Training on Cluster 1
         estimators = [SGDClassifier()]
         all_param_grids = {0:{"loss":["log"],
@@ -238,7 +243,7 @@ def run_bs2_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,user_type=
 
 
 @timer
-def run_bs3_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,cluster_2_use=2,user_type="Heterogeneous"):
+def run_bs3_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,cluster_2_use=2,user_type="Heterogeneous",tf_idf=False):
     """
     Measures Systems Performance on a Single Cluster, used to test the performance on cluster 2 just to compare
     how well the recommendation system seems to be able to detect change in topics
@@ -264,10 +269,12 @@ def run_bs3_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,cluster_2_
                                                                 random_state=RANDOM_SEED,
                                                                 shuffle=True,
                                                                 stratify=y_train)
-        scaler = StandardScaler()
-        scaler.fit(x_bootstrap)
-        x_bootstrap = scaler.transform(x_bootstrap)
-        x_cp = scaler.transform(x_cp)
+        
+        if tf_idf == False:
+            scaler = StandardScaler()
+            scaler.fit(x_bootstrap)
+            x_bootstrap = scaler.transform(x_bootstrap)
+            x_cp = scaler.transform(x_cp)
         # Initial Training on Cluster 1
         estimators = [SGDClassifier()]
         all_param_grids = {0:{"loss":["log"],
@@ -275,6 +282,7 @@ def run_bs3_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,cluster_2_
                               "alpha":[0.0001,0.001,0.01],
                               "random_state":[RANDOM_SEED],
                               "n_jobs":[-1]}}
+
         best_models = []
         for index_est,estimator in enumerate(estimators):
             gcv = GridSearchCV(estimator,all_param_grids[index_est],scoring="f1_macro",n_jobs=-1)
@@ -337,7 +345,7 @@ def run_bs3_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,cluster_2_
 @timer
 def run_bs4_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                                  user_type="Heterogeneous",
-                                 reg_constants=[0.0001,0.001,0.01,0.1,1.0]):
+                                 reg_constants=[0.0001,0.001,0.01,0.1,1.0],tf_idf=False):
     """
     """
     cp_scores_map = {}
@@ -352,10 +360,11 @@ def run_bs4_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
         
         scores_map = defaultdict(lambda : defaultdict(list))
         
-        scaler = StandardScaler()
-        scaler.fit(x_train)
-        x_train = scaler.transform(x_train)
-        x_test = scaler.transform(x_test)
+        if tf_idf == False:
+            scaler = StandardScaler()
+            scaler.fit(x_train)
+            x_train = scaler.transform(x_train)
+            x_test = scaler.transform(x_test)
         
         for regc in reg_constants:
             
@@ -416,7 +425,7 @@ def run_bs4_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
 @timer
 def run_bs5_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                                  user_type="Heterogeneous",
-                                 lr=[0.001,0.01,0.1,1.0,10],debug=False):
+                                 lr=[0.001,0.01,0.1,1.0,10],debug=False,tf_idf=False):
     """
     """
     cp_scores_map = {}
@@ -432,10 +441,11 @@ def run_bs5_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
         
         # check 
         scores_map = defaultdict(lambda : defaultdict(list))
-        scaler = StandardScaler()
-        scaler.fit(x_train)
-        x_train = scaler.transform(x_train)
-        x_test = scaler.transform(x_test)
+        if tf_idf == False:
+            scaler = StandardScaler()
+            scaler.fit(x_train)
+            x_train = scaler.transform(x_train)
+            x_test = scaler.transform(x_test)
         for l_r in lr:
 #             print("\n*************** CP = %s , LR = %s ****************" %(str(cp),str(l_r)))
             clf = SGDClassifier(loss="log",penalty="l2",eta0=l_r,learning_rate="constant",random_state=RANDOM_SEED)
@@ -511,7 +521,7 @@ def run_bs6_train_all(X,
                       df,
                       cluster_pairs,
                       cosine_mat,
-                      user_type="Heterogeneous",):
+                      user_type="Heterogeneous",tf_idf=False):
     """
     """
     cp_scores_map = {}
@@ -541,11 +551,12 @@ def run_bs6_train_all(X,
                                                     shuffle=True,
                                                     stratify=y_test)
         
-        scaler = StandardScaler()
-        scaler.fit(x_bootstrap)
-        x_bootstrap = scaler.transform(x_bootstrap)
-        x_train_cp = scaler.transform(x_train_cp)
-        x_test_cp = scaler.transform(x_test_cp)
+        if tf_idf == False:
+            scaler = StandardScaler()
+            scaler.fit(x_bootstrap)
+            x_bootstrap = scaler.transform(x_bootstrap)
+            x_train_cp = scaler.transform(x_train_cp)
+            x_test_cp = scaler.transform(x_test_cp)
         
         # Initial Training on Cluster 1
         estimators = [SGDClassifier()]
@@ -677,7 +688,7 @@ def run_bs6_train_all(X,
 @timer
 def run_bs7_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                                  user_type="Heterogeneous",
-                                 lr=[0.001,0.01,0.1,1.0,10]):
+                                 lr=[0.001,0.01,0.1,1.0,10],tf_idf=False):
     """
     """
     cp_scores_map = {}
@@ -706,11 +717,12 @@ def run_bs7_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                                                     random_state=RANDOM_SEED,
                                                     shuffle=True,
                                                     stratify=y_test)
-        scaler = StandardScaler()
-        scaler.fit(x_bootstrap)
-        x_bootstrap = scaler.transform(x_bootstrap)
-        x_train_cp = scaler.transform(x_train_cp)
-        x_test_cp = scaler.transform(x_test_cp)
+        if tf_idf == False:
+            scaler = StandardScaler()
+            scaler.fit(x_bootstrap)
+            x_bootstrap = scaler.transform(x_bootstrap)
+            x_train_cp = scaler.transform(x_train_cp)
+            x_test_cp = scaler.transform(x_test_cp)
         
         scores_map = defaultdict(lambda : defaultdict(list))
         for l_r in lr:
