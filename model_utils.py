@@ -5,11 +5,13 @@ from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import numpy as np
-from metrics_utils import get_scores, get_scores_wot
+from metrics_utils import get_scores, get_scores_wot, calc_entropy_and_dist, calc_entropy_and_dist_sep
 from data_utils import create_train_test
 from config import RANDOM_SEED
 from collections import defaultdict, Counter
 import copy
+
+
 
 def run_model(x_train,x_test,y_train,y_test,seed=RANDOM_SEED,tf_idf=False):
     """
@@ -138,6 +140,10 @@ def run_online_setting_active(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,us
                 scores_map[model]["precision"].append(precision)
                 scores_map[model]["recall"].append(recall)
                 scores_map[model]["accuracy"].append(accuracy) 
+            
+            entropy, stance_dist = calc_entropy_and_dist(y_preds)
+            scores_map[model]["entropy"] = entropy
+            scores_map[model]["stance_dist"]= stance_dist
         
         cp_scores_map[cp] = scores_map
     return cp_scores_map
@@ -229,6 +235,10 @@ def run_bs2_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,user_type=
                 scores_map[model]["f1"].append(f1)
                 scores_map[model]["precision"].append(precision)
                 scores_map[model]["recall"].append(recall)
+            
+            entropy, stance_dist = calc_entropy_and_dist(y_preds)
+            scores_map[model]["entropy"] = entropy
+            scores_map[model]["stance_dist"]= stance_dist
         
 #         df_temp = pd.DataFrame()
 #         df_temp["Shown at K"] = y_preds
@@ -249,7 +259,7 @@ def run_bs3_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,cluster_2_
     how well the recommendation system seems to be able to detect change in topics
     """
     cp_scores_map = {}
-    N=200
+    N=100
     for index,cp in enumerate(cluster_pairs):
 #         print("Training model for cluster pair : %s" %str(index))
         x_train,x_test,y_train,y_test,cluster_1_doc_indices,cluster_2_doc_indices = create_train_test(cluster_pair=cp,
@@ -265,7 +275,7 @@ def run_bs3_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,cluster_2_
         # Bootstrap data and candidate pool
         x_bootstrap, x_cp, y_bootstrap, y_cp = train_test_split(x_train,
                                                                 y_train,
-                                                                test_size=N,
+                                                                test_size=150,
                                                                 random_state=RANDOM_SEED,
                                                                 shuffle=True,
                                                                 stratify=y_train)
@@ -297,7 +307,7 @@ def run_bs3_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,cluster_2_
         for index_bm,clf in enumerate(best_models):
             model = models[index_bm]
             total_relevant_docs = Counter(y_cp)[1.0]
-            total_interactions = int(N/2)
+            total_interactions = N
             liked_docs_recommended = 0
             y_preds = []
             
@@ -336,6 +346,10 @@ def run_bs3_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,cluster_2_
                 scores_map[model]["f1"].append(f1)
                 scores_map[model]["precision"].append(precision)
                 scores_map[model]["recall"].append(recall)
+                
+            entropy, stance_dist = calc_entropy_and_dist(y_preds)
+            scores_map[model]["entropy"] = entropy
+            scores_map[model]["stance_dist"]= stance_dist
         
         cp_scores_map[cp] = scores_map
     return cp_scores_map
@@ -418,6 +432,10 @@ def run_bs4_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                 scores_map[str(regc)]["f1"].append(f1)
                 scores_map[str(regc)]["precision"].append(precision)
                 scores_map[str(regc)]["recall"].append(recall)
+            
+            entropy, stance_dist = calc_entropy_and_dist(y_preds)
+            scores_map[str(regc)]["entropy"] = entropy
+            scores_map[str(regc)]["stance_dist"]= stance_dist
                 
         cp_scores_map[cp] = scores_map
     return cp_scores_map
@@ -447,17 +465,14 @@ def run_bs5_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
             x_train = scaler.transform(x_train)
             x_test = scaler.transform(x_test)
         for l_r in lr:
-#             print("\n*************** CP = %s , LR = %s ****************" %(str(cp),str(l_r)))
             clf = SGDClassifier(loss="log",penalty="l2",eta0=l_r,learning_rate="constant",random_state=RANDOM_SEED)
-#             print(str(clf))
             clf.fit(x_train,y_train)
             
             
             total_relevant_docs = Counter(y_test)[1.0]
-            total_interactions = 200
+            total_interactions = 100
             liked_docs_recommended = 0
             y_preds = []
-#             y_pred_text = []
             candidate_pool_x = copy.deepcopy(x_test)
             candidate_pool_y = copy.deepcopy(y_test)
 
@@ -468,8 +483,6 @@ def run_bs5_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                 top_index = rank_indices[-1]
                 pred_verdict = candidate_pool_y[top_index]
                 y_preds.append(pred_verdict)
-#                 y_pred_text.append(sample_df["processed_text"].iloc[cluster_2_doc_indices[top_index]])
-                    
                 
                 # update the model 
                 clf.partial_fit(candidate_pool_x[top_index].reshape(1, -1),np.array([candidate_pool_y[top_index]]))
@@ -494,24 +507,14 @@ def run_bs5_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                 scores_map[str(l_r)]["f1"].append(f1)
                 scores_map[str(l_r)]["precision"].append(precision)
                 scores_map[str(l_r)]["recall"].append(recall)
-#                 scores_map[str(l_r)]["y_pred_text"] = y_pred_text
+
+            entropy, stance_dist = calc_entropy_and_dist(y_preds)
+            scores_map[str(l_r)]["entropy"] = entropy
+            scores_map[str(l_r)]["stance_dist"]= stance_dist
                 
             clf = None
                 
         cp_scores_map[cp] = scores_map
-#         df_temp = pd.DataFrame()
-#         df_temp["Shown at K"] = y_preds
-#         df_temp["Recall at K"] = scores_map["100"]["recall"]
-#         df_temp["Precision at K"] = scores_map["100"]["precision"]
-#         df_temp["Top Article"] = scores_map["100"]["y_pred_text"]
-#         results_df_map_100[cp] = df_temp
-        
-#         df_temp = pd.DataFrame()
-#         df_temp["Shown at K"] = y_preds
-#         df_temp["Recall at K"] = scores_map["500"]["recall"]
-#         df_temp["Precision at K"] = scores_map["500"]["precision"]
-#         df_temp["Top Article"] = scores_map["500"]["y_pred_text"]
-#         results_df_map_500[cp] = df_temp
         
     return cp_scores_map
 
@@ -580,7 +583,7 @@ def run_bs6_train_all(X,
         # To measure @K Precision
         for index_bm,clf in enumerate(best_models):
             model = models[index_bm]
-            N = 200
+            N = 100
             total_relevant_docs = Counter(y_test)[1.0]
             liked_docs_recommended = 0
             y_true_sub = []
@@ -680,6 +683,16 @@ def run_bs6_train_all(X,
                 scores_map[model]["recall"].append(recall)
                 scores_map[model]["recall_c1"].append(recall_c1)
                 scores_map[model]["recall_c2"].append(recall_c2)
+            
+            ent, ent_c1, ent_c2, prob_vec, prob_vec_c1, prob_vec_c2 = calc_entropy_and_dist_sep(y_preds,scores_map[model]["which_cluster"])
+            
+            scores_map[model]["entropy"] = ent
+            scores_map[model]["entropy_c1"] = ent_c1
+            scores_map[model]["entropy_c2"] = ent_c2
+            scores_map[model]["stance_dist"] = prob_vec
+            scores_map[model]["stance_dist_c1"] = prob_vec_c1
+            scores_map[model]["stance_dist_c2"] = prob_vec_c2
+            
         
         cp_scores_map[cp] = scores_map
     return cp_scores_map
@@ -692,7 +705,7 @@ def run_bs7_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
     """
     """
     cp_scores_map = {}
-    N=200
+    N=100
     for index,cp in enumerate(cluster_pairs):
 #         print("Training model for cluster pair : %s" %str(index))
         x_train,x_test,y_train,y_test,cluster_1_doc_indices,cluster_2_doc_indices = create_train_test(cluster_pair=cp,
@@ -827,6 +840,15 @@ def run_bs7_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                 scores_map[str(l_r)]["recall"].append(recall)
                 scores_map[str(l_r)]["recall_c1"].append(recall_c1)
                 scores_map[str(l_r)]["recall_c2"].append(recall_c2)
+            
+            ent, ent_c1, ent_c2, prob_vec, prob_vec_c1, prob_vec_c2 = calc_entropy_and_dist_sep(y_preds,scores_map[str(l_r)]["which_cluster"])
+            
+            scores_map[str(l_r)]["entropy"] = ent
+            scores_map[str(l_r)]["entropy_c1"] = ent_c1
+            scores_map[str(l_r)]["entropy_c2"] = ent_c2
+            scores_map[str(l_r)]["stance_dist"] = prob_vec
+            scores_map[str(l_r)]["stance_dist_c1"] = prob_vec_c1
+            scores_map[str(l_r)]["stance_dist_c2"] = prob_vec_c2
                 
         cp_scores_map[cp] = scores_map
     return cp_scores_map

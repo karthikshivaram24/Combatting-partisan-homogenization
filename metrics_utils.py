@@ -1,8 +1,62 @@
 import numpy as np
 from sklearn import metrics
 from config import RANDOM_SEED
-from collections import defaultdict
+from collections import defaultdict,Counter
 
+def entropy(arr, max_one=True):
+    """
+    Normalized entropy , we divide by the log_2(num of states/ classes)
+    """
+    e = 0
+    for p in arr:
+        if p > 0:
+            e += p*np.log2(p)
+
+    if max_one:
+        e /= np.log2(len(arr))
+
+    return -1*e   
+
+def calc_entropy_and_dist(preds):
+    """
+    Calculates entropy btwe topic, ps and new's source distribution
+    """
+    
+    prob_counter = Counter(preds)
+    prob_vec = [prob_counter[stance]/len(preds) for stance in sorted(prob_counter.keys())]
+
+    assert round(sum(prob_vec)) == 1.0
+
+    return entropy(prob_vec),prob_vec
+
+def calc_entropy_and_dist_sep(preds,which_cluster):
+    """
+    """
+    # Probs - p_c1, p_c2
+    preds_c1 =[]
+    preds_c2 = []
+    
+    for cind,c in enumerate(which_cluster):
+        if c == 1:
+            preds_c1.append(preds[cind])
+        else:
+            preds_c2.append(preds[cind])
+    
+    prob_count = Counter(preds)
+    prob_C1 = Counter(preds_c1)
+    prob_C2 = Counter(preds_c2)
+    
+    prob_vec = [prob_count[stance]/len(preds) for stance in sorted(prob_count.keys())]
+    prob_vec_c1 = [prob_C1[stance]/len(preds_c1) for stance in sorted(prob_C1.keys())]
+    prob_vec_c2 = [prob_C2[stance]/len(preds_c2) for stance in sorted(prob_C2.keys())]
+    # entropy - e_c1, e_c2
+    
+    ent = entropy(prob_vec)
+    ent_c1 = entropy(prob_vec_c1)
+    ent_c2 = entropy(prob_vec_c2)
+    
+    return ent, ent_c1, ent_c2, prob_vec, prob_vec_c1, prob_vec_c2
+    pass
 
 def calculate_masked_avg(act_arr,mask_array,cluster_=1):
     """
@@ -24,21 +78,41 @@ def calculate_avg_precision_param_variation(scores_,params,mode="single"):
         avg_prescision = []
         c1_avg_precision = []
         c2_avg_precision = []
+        avg_entropy = []
+        c1_avg_entropy = []
+        c2_avg_entropy = []
+        
+        avg_dist = []
+        c1_avg_dist = []
+        c2_avg_dist = []
         for cp in scores_:
             avg_prescision.append(np.mean(scores_[cp][str(param)]["precision"]))
+            avg_entropy.append(scores_[cp][str(param)]["entropy"])
+            avg_dist.append(scores_[cp][str(param)]["stance_dist"])
             if mode == "mixed":
 #                 c1_avg_precision.append(np.mean(scores_[cp][str(param)]["precision_c1"]))
                 c1_avg_precision.append(calculate_masked_avg(act_arr = scores_[cp][str(param)]["precision_c1"], 
                                                              mask_array=scores_[cp][str(param)]["which_cluster"],cluster_=1))
+                c1_avg_entropy.append(scores_[cp][str(param)]["entropy_c1"])
+#                 c1_avg_dist.append(scores_[cp][str(param)]["stance_dist_c1"])
 #                 c2_avg_precision.append(np.mean(scores_[cp][str(param)]["precision_c2"]))
                 c2_avg_precision.append(calculate_masked_avg(act_arr = scores_[cp][str(param)]["precision_c2"], 
                                                              mask_array=scores_[cp][str(param)]["which_cluster"],cluster_=2))
+                c2_avg_entropy.append(scores_[cp][str(param)]["entropy_c2"])
+#                 c2_avg_dist.append(scores_[cp][str(param)]["stance_dist_c2"])
+    
         
         param_results[param]["avg_precision"] = avg_prescision
+        param_results[param]["avg_entropy"] = avg_entropy
+        param_results[param]["stance_dist"] = avg_dist
         
         if mode == "mixed":
             param_results[param]["c1_avg_precision"] = c1_avg_precision
             param_results[param]["c2_avg_precision"] = c2_avg_precision
+            param_results[param]["c1_avg_entropy"] = c1_avg_entropy
+            param_results[param]["c2_avg_entropy"] = c2_avg_entropy
+#             param_results[param]["c1_avg_dist"] = c1_avg_dist
+#             param_results[param]["c2_avg_dist"] = c2_avg_dist
     
     return param_results
 
@@ -47,17 +121,40 @@ def calculate_map_param_variation(param_results,mode="single"):
     """
     results_dict = defaultdict(lambda : defaultdict(float))
     for param in param_results:
-        print("\nParam : %s" %str(param))
-        print(np.mean(param_results[param]["avg_precision"]))
+#         print("\nParam : %s" %str(param))
+#         print(np.mean(param_results[param]["avg_precision"]))
         results_dict[param]["avg_precision"] = np.mean(param_results[param]["avg_precision"])
+        results_dict[param]["avg_entropy"] = np.mean(param_results[param]["avg_entropy"])
+        
+#         avg_stance_0 = np.mean([i[0] for i in param_results[param]["stance_dist"]])
+#         avg_stance_1 = np.mean([i[1] for i in param_results[param]["stance_dist"]])
+        
+        results_dict[param]["avg_stance"] = np.mean(param_results[param]["stance_dist"],axis=0)
+        
         if mode == "mixed":
-            print("c1 MAP : \n%s"%str(np.mean(param_results[param]["c1_avg_precision"])))
             results_dict[param]["c1_avg_precision"] = np.mean(param_results[param]["c1_avg_precision"])
-            print("c2 MAP : \n%s"%str(np.mean(param_results[param]["c2_avg_precision"])))
             results_dict[param]["c2_avg_precision"] = np.mean(param_results[param]["c2_avg_precision"])
+            results_dict[param]["c1_avg_entropy"] = np.mean(param_results[param]["c1_avg_entropy"])
+            results_dict[param]["c2_avg_entropy"] = np.mean(param_results[param]["c2_avg_entropy"])
+            
+            
+#             avg_stance_0 = np.mean(param_results[param]["c1_avg_dist"],axis=0)
+#             avg_stance_1 = np.mean(param_results[param]["c1_avg_dist"],axis=0)
+#             results_dict[param]["c1_avg_dist"] = np.mean(param_results[param]["c1_avg_dist"],axis=0)
+            
+#             avg_stance_0 = np.mean([i[0] for i in param_results[param]["c2_avg_dist"]])
+#             avg_stance_1 = np.mean([i[1] for i in param_results[param]["c2_avg_dist"]])
+#             results_dict[param]["c2_avg_dist"] = np.mean(param_results[param]["c2_avg_dist"],axis=0)
+            
+            
         else:
             results_dict[param]["c1_avg_precision"] = np.nan
             results_dict[param]["c2_avg_precision"] = np.nan
+            results_dict[param]["c1_avg_entropy"] = np.nan
+            results_dict[param]["c2_avg_entropy"] = np.nan
+#             results_dict[param]["c1_avg_dist"] = [np.nan, np.nan]
+#             results_dict[param]["c2_avg_dist"] = [np.nan, np.nan]
+            
             
     return results_dict
     
@@ -66,24 +163,38 @@ def calculate_avg_precision(scores_,mode="single"):
     Calculates Average Precision for a given Cluster Pair, here each 
     cluster pair represents a user against a system trained to learn his
     preferences
-    """
+    """    
     avg_prescision = []
     c1_avg_precision = []
     c2_avg_precision = []
+    avg_entropy = []
+    c1_avg_entropy = []
+    c2_avg_entropy = []   
+    avg_dist = []
+    c1_avg_dist = []
+    c2_avg_dist = []
+    
     for cp in scores_:
         avg_prescision.append(np.mean(scores_[cp]["logistic_regression"]["precision"]))
+        avg_entropy.append(np.mean(scores_[cp]["logistic_regression"]["entropy"]))
+        avg_dist.append(scores_[cp]["logistic_regression"]["stance_dist"])
+        
         if mode == "mixed":
 #             c1_avg_precision.append(np.mean(scores_[cp]["logistic_regression"]["precision_c1"]))
             c1_avg_precision.append(calculate_masked_avg(act_arr = scores_[cp]["logistic_regression"]["precision_c1"], 
                                                              mask_array=scores_[cp]["logistic_regression"]["which_cluster"],cluster_=1))
+            c1_avg_entropy.append(scores_[cp]["logistic_regression"]["entropy_c1"])
+#             c1_avg_dist.append(scores_[cp]["logistic_regression"]["stance_dist_c1"])
 #             c2_avg_precision.append(np.mean(scores_[cp]["logistic_regression"]["precision_c2"]))
             c2_avg_precision.append(calculate_masked_avg(act_arr = scores_[cp]["logistic_regression"]["precision_c2"], 
                                                              mask_array=scores_[cp]["logistic_regression"]["which_cluster"],cluster_=2))
+            c2_avg_entropy.append(scores_[cp]["logistic_regression"]["entropy_c2"])
+#             c2_avg_dist.append(scores_[cp]["logistic_regression"]["stance_dist_c2"])
             
     if mode == "single":
-        return avg_prescision
+        return avg_prescision,avg_entropy,avg_dist
     else:
-        return avg_prescision, c1_avg_precision, c2_avg_precision
+        return avg_prescision, c1_avg_precision, c2_avg_precision, avg_entropy, c1_avg_entropy, c2_avg_entropy, avg_dist, c1_avg_dist, c2_avg_dist
         
     
 def calculate_map(scores_,mode="single"):

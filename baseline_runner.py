@@ -209,7 +209,7 @@ class BaselineRunner(object):
         if baseline_2_run == "4":
             kwargs["reg_constants"] = self.baseline_params_map[baseline_2_run]
         
-        self.scores_map[baseline_2_run]["Homogeneous_user"] = self.baseline_func_maps[baseline_2_run](user_type="Homogeneous",**kwargs)
+#         self.scores_map[baseline_2_run]["Homogeneous_user"] = self.baseline_func_maps[baseline_2_run](user_type="Homogeneous",**kwargs)
         
         self.scores_map[baseline_2_run]["Heterogeneous_user"] = self.baseline_func_maps[baseline_2_run](user_type="Heterogeneous",**kwargs)
         
@@ -230,7 +230,7 @@ class BaselineRunner(object):
             self.vectors = vectorize_text(df=self.data,mode="glove")
             print("Glove Dimensions : %s" %str(self.vectors.shape))
         
-        elif "bert" in self.rep_type :
+        elif "bert" in self.rep_type and "tf_idf" not in self.rep_type :
             layer = int(self.rep_type .split("_")[1])
             perc_vc = int(self.rep_type .split("_")[-1])
             print("\nLoading Bert with %s %% contextualization"%str(perc_vc))
@@ -240,6 +240,24 @@ class BaselineRunner(object):
                                                 layer=layer,
                                                 context_var=perc_vc,
                                                 aggregation="mean")
+        
+        else:
+            layer = int(self.rep_type .split("_")[1])
+            perc_vc = int(self.rep_type .split("_")[2])
+            bert_vectors = load_bert_embeddings(df=self.data,
+                                                saved_path="/media/karthikshivaram/SABER_4TB/bert_embeddings",
+                                                batch_size=50,
+                                                layer=layer,
+                                                context_var=perc_vc,
+                                                aggregation="mean")
+            
+            vectors,vocab,tfidf_vectorizer = tfidf_vectorization(df=self.data,
+                                                                 min_df=CONFIG.min_df,
+                                                                 max_df=CONFIG.max_df,
+                                                                 max_features = 500,
+                                                                 seed=CONFIG.RANDOM_SEED)
+            
+            self.vectors = np.concatenate((bert_vectors,vectors.todense()),axis=1)
     
     def _cluster_(self):
         """
@@ -308,28 +326,61 @@ class BaselineRunner(object):
             if baseline in ["2","3","6"]:
                 
                 if baseline == "6":
-                    avg_prescision, c1_avg_precision, c2_avg_precision = calculate_avg_precision(self.scores_map[baseline]["Heterogeneous_user"],mode="mixed")
-                    self.mean_avg_prec_map[baseline]["Heterogeneous_user"]["map"] = {"avg_precision":np.mean(avg_prescision),"c1_avg_precision":np.mean(c1_avg_precision),"c2_avg_precision":np.mean(c2_avg_precision)}
-                    avg_prescision, c1_avg_precision, c2_avg_precision = calculate_avg_precision(self.scores_map[baseline]["Homogeneous_user"],mode="mixed")
-                    self.mean_avg_prec_map[baseline]["Homogeneous_user"]["map"] = {"avg_precision":np.mean(avg_prescision),"c1_avg_precision":np.mean(c1_avg_precision),"c2_avg_precision":np.mean(c2_avg_precision)}
+                    avg_prescision, c1_avg_precision, c2_avg_precision, avg_entropy, c1_avg_entropy, c2_avg_entropy, avg_dist, c1_avg_dist, c2_avg_dist = calculate_avg_precision(self.scores_map[baseline]["Heterogeneous_user"],mode="mixed")
+                    self.mean_avg_prec_map[baseline]["Heterogeneous_user"]["map"] = {"avg_precision":np.mean(avg_prescision),
+                                                                                     "c1_avg_precision":np.mean(c1_avg_precision),
+                                                                                     "c2_avg_precision":np.mean(c2_avg_precision),
+                                                                                     "avg_entropy":np.mean(avg_entropy),
+                                                                                     "c1_avg_entropy":np.mean(c1_avg_entropy),
+                                                                                     "c2_avg_entropy":np.mean(c2_avg_entropy),
+                                                                                     "avg_stance": np.mean(avg_dist,axis=0)}
+#                                                                                      "c1_avg_dist":np.mean(c1_avg_dist,axis=0),
+#                                                                                      "c2_avg_dist":np.mean(c2_avg_dist,axis=0)}
+                    
+#                     avg_prescision, c1_avg_precision, c2_avg_precision, avg_entropy, c1_avg_entropy, c2_avg_entropy, avg_dist, c1_avg_dist, c2_avg_dist = calculate_avg_precision(self.scores_map[baseline]["Homogeneous_user"],mode="mixed")
+#                     self.mean_avg_prec_map[baseline]["Homogeneous_user"]["map"] = {"avg_precision":np.mean(avg_prescision),
+#                                                                                      "c1_avg_precision":np.mean(c1_avg_precision),
+#                                                                                      "c2_avg_precision":np.mean(c2_avg_precision),
+#                                                                                      "avg_entropy":np.mean(avg_entropy),
+#                                                                                      "c1_avg_entropy":np.mean(c1_avg_entropy),
+#                                                                                      "c2_avg_entropy":np.mean(c2_avg_entropy),
+#                                                                                      "avg_stance": np.mean(avg_dist,axis=0),
+#                                                                                      "c1_avg_dist":np.mean(c1_avg_dist,axis=0),
+#                                                                                      "c2_avg_dist":np.mean(c2_avg_dist,axis=0)}
                 else:
-                    avg_prescision = calculate_avg_precision(self.scores_map[baseline]["Heterogeneous_user"],mode="single")
-                    self.mean_avg_prec_map[baseline]["Heterogeneous_user"]["map"]={"avg_precision":np.mean(avg_prescision),"c1_avg_precision":np.nan,"c2_avg_precision":np.nan}
-                    avg_prescision = calculate_avg_precision(self.scores_map[baseline]["Homogeneous_user"],mode="single")
-                    self.mean_avg_prec_map[baseline]["Homogeneous_user"]["map"]={"avg_precision": np.mean(avg_prescision),"c1_avg_precision":np.nan,"c2_avg_precision":np.nan}
+                    avg_prescision,avg_entropy,avg_dist = calculate_avg_precision(self.scores_map[baseline]["Heterogeneous_user"],mode="single")
+                    self.mean_avg_prec_map[baseline]["Heterogeneous_user"]["map"]={"avg_precision":np.mean(avg_prescision),
+                                                                                     "c1_avg_precision":np.nan,
+                                                                                     "c2_avg_precision":np.nan,
+                                                                                     "avg_entropy":np.mean(avg_entropy),
+                                                                                     "c1_avg_entropy":np.nan,
+                                                                                     "c2_avg_entropy":np.nan,
+                                                                                     "avg_stance": np.mean(avg_dist,axis=0)}
+#                                                                                      "c1_avg_dist":[np.nan,np.nan],
+#                                                                                      "c2_avg_dist":[np.nan,np.nan]}
+#                     avg_prescision,avg_entropy,avg_dist = calculate_avg_precision(self.scores_map[baseline]["Homogeneous_user"],mode="single")
+#                     self.mean_avg_prec_map[baseline]["Homogeneous_user"]["map"]={"avg_precision":np.mean(avg_prescision),
+#                                                                                      "c1_avg_precision":np.nan,
+#                                                                                      "c2_avg_precision":np.nan,
+#                                                                                      "avg_entropy":np.mean(avg_entropy),
+#                                                                                      "c1_avg_entropy":np.nan,
+#                                                                                      "c2_avg_entropy":np.nan,
+#                                                                                      "avg_stance":np.mean(avg_dist,axis=0),
+#                                                                                      "c1_avg_dist":[np.nan,np.nan],
+#                                                                                      "c2_avg_dist":[np.nan,np.nan]}
             
             if baseline in ["4","5","7"]:
                 
                 if baseline == "7":
                     param_results = calculate_avg_precision_param_variation(self.scores_map[baseline]["Heterogeneous_user"],params=self.baseline_params_map[baseline],mode="mixed")
                     self.mean_avg_prec_map[baseline]["Heterogeneous_user"]["map"] = calculate_map_param_variation(param_results,mode="mixed")
-                    param_results = calculate_avg_precision_param_variation(self.scores_map[baseline]["Homogeneous_user"],params=self.baseline_params_map[baseline],mode="mixed")
-                    self.mean_avg_prec_map[baseline]["Homogeneous_user"]["map"] = calculate_map_param_variation(param_results,mode="mixed")
+#                     param_results = calculate_avg_precision_param_variation(self.scores_map[baseline]["Homogeneous_user"],params=self.baseline_params_map[baseline],mode="mixed")
+#                     self.mean_avg_prec_map[baseline]["Homogeneous_user"]["map"] = calculate_map_param_variation(param_results,mode="mixed")
                 else:
                     param_results = calculate_avg_precision_param_variation(self.scores_map[baseline]["Heterogeneous_user"],params=self.baseline_params_map[baseline],mode="single")
                     self.mean_avg_prec_map[baseline]["Heterogeneous_user"]["map"] = calculate_map_param_variation(param_results,mode="single")
-                    param_results = calculate_avg_precision_param_variation(self.scores_map[baseline]["Homogeneous_user"],params=self.baseline_params_map[baseline],mode="single")
-                    self.mean_avg_prec_map[baseline]["Homogeneous_user"]["map"] = calculate_map_param_variation(param_results,mode="single")
+#                     param_results = calculate_avg_precision_param_variation(self.scores_map[baseline]["Homogeneous_user"],params=self.baseline_params_map[baseline],mode="single")
+#                     self.mean_avg_prec_map[baseline]["Homogeneous_user"]["map"] = calculate_map_param_variation(param_results,mode="single")
 
     
     def _save_scores_(self):
@@ -345,7 +396,7 @@ class BaselineRunner(object):
         # saving results without param variation
         
         for baseline in ["2","3","6"]:
-            map_res_homo.append(self.mean_avg_prec_map[baseline]["Homogeneous_user"]["map"])
+#             map_res_homo.append(self.mean_avg_prec_map[baseline]["Homogeneous_user"]["map"])
 #             map_res_homo += list(self.mean_avg_prec_map[baseline]["Homogeneous_user"]["map"].items())
             map_res_hetero.append(self.mean_avg_prec_map[baseline]["Heterogeneous_user"]["map"])
             baseline_col.append(baseline)
@@ -353,27 +404,27 @@ class BaselineRunner(object):
         
         # saving results with param variation
         for baseline in ["4","5","7"]:
-            for param in self.mean_avg_prec_map[baseline]["Homogeneous_user"]["map"].keys():
+            for param in self.mean_avg_prec_map[baseline]["Heterogeneous_user"]["map"].keys():
                 baseline_col.append(baseline)
                 param_val.append(str(param))
-                map_res_homo.append(self.mean_avg_prec_map[baseline]["Homogeneous_user"]["map"][param])
+#                 map_res_homo.append(self.mean_avg_prec_map[baseline]["Homogeneous_user"]["map"][param])
                 map_res_hetero.append(self.mean_avg_prec_map[baseline]["Heterogeneous_user"]["map"][param])
         
         # from our lists of dictionaries (ie {map,map_c1,map_c2})
-        score_df_homo = pd.DataFrame(map_res_homo)
-        score_df_homo["Baseline"] = baseline_col
-        score_df_homo["Param_setting"] = param_val
-        score_df_homo.rename({"avg_precision":"MAP","c1_avg_precision":"MAP_C1","c2_avg_precision":"MAP_C2"},inplace=True)
+#         score_df_homo = pd.DataFrame(map_res_homo)
+#         score_df_homo["Baseline"] = baseline_col
+#         score_df_homo["Param_setting"] = param_val
+#         score_df_homo.rename({"avg_precision":"MAP","c1_avg_precision":"MAP_C1","c2_avg_precision":"MAP_C2"},inplace=True)
         
         score_df_hetero = pd.DataFrame(map_res_hetero)
         score_df_hetero["Baseline"] = baseline_col
         score_df_hetero["Param_setting"] = param_val
-        score_df_hetero.rename({"avg_precision":"MAP","c1_avg_precision":"MAP_C1","c2_avg_precision":"MAP_C2"},inplace=True)
+#         score_df_hetero.rename({"avg_precision":"MAP","c1_avg_precision":"MAP_C1","c2_avg_precision":"MAP_C2"},inplace=True)
         
 #         score_df_homo = score_df_homo[["Baseline", "Param_Setting","MAP","MAP_C1","MAP_C2"]]
 #         score_df_hetero = score_df_hetero[["Baseline", "Param_Setting","MAP","MAP_C1","MAP_C2"]]
         
-        score_df_homo.to_csv("Baseline_results_%s_homo.csv"%self.rep_type ,index=False)
+#         score_df_homo.to_csv("Baseline_results_%s_homo.csv"%self.rep_type ,index=False)
         score_df_hetero.to_csv("Baseline_results_%s_hetero.csv"%self.rep_type ,index=False)
         print("\nFinished Saving Results ..............")
                 

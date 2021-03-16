@@ -55,7 +55,7 @@ def preprocess_texts(text_lists):
 
 
 @timer
-def tfidf_vectorization(df,min_df=30,max_df=0.75,seed=RANDOM_SEED):
+def tfidf_vectorization(df,min_df=30,max_df=0.75,max_features=8000,seed=RANDOM_SEED):
     """
     Vectorizes a given list of text (in the form of a dataframe column) using TF-IDF measures
     
@@ -73,7 +73,7 @@ def tfidf_vectorization(df,min_df=30,max_df=0.75,seed=RANDOM_SEED):
     * tf_idf_vectorizer -> the vectorizer object 
     """
     df["all_text"] = df["title"] + " " + df["processed_text"]
-    tfidf_vectorizer = TfidfVectorizer(min_df=min_df, binary=False, max_df=max_df, stop_words='english',max_features=8000)
+    tfidf_vectorizer = TfidfVectorizer(min_df=min_df, binary=False, max_df=max_df, stop_words='english',max_features=max_features)
     vectors = tfidf_vectorizer.fit_transform(df["all_text"])
     vocab = tfidf_vectorizer.vocabulary_
     print("vocab_size : %s"%str(len(vocab)))
