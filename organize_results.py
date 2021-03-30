@@ -4,7 +4,7 @@ import ast
 
 if __name__ == "__main__":
     
-    folder = "Files/Baseline_Results_MAPS/Latest/"
+    folder = "Results_sampled_rel_all/"
     files = [folder+f for f in os.listdir(folder) if ".csv" in f]
     
     for f in files:

@@ -17,19 +17,51 @@ def entropy(arr, max_one=True):
 
     return -1*e   
 
-def calc_entropy_and_dist(preds):
+def reflip(stance_dist,which_cluster):
+    """
+    """
+    true_stance = []
+    for i_s,s in enumerate(stance_dist):
+        if which_cluster[i_s] == 2:
+            if s == 0:
+                true_stance.append(1)
+            if s == 1:
+                true_stance.append(0)
+        else:
+            true_stance.append(s)
+    
+    return true_stance
+
+def calc_entropy_and_dist(preds,user_type):
     """
     Calculates entropy btwe topic, ps and new's source distribution
+    
+    So we use the recommended articles to do this,
+    
+    Thing to note:
+    Homogeneous User - Docs from both clusters have label 1 if they are conservative
+    Heterogeneous User - Docs from cluster 1 have label 1 if they are conservative, docs from cluster 2 have label 1 if they are liberal
+    So for Hetero users we need to flip the labels to get our stance probabilities back 
     """
     
     prob_counter = Counter(preds)
+    
+    if len(prob_counter.keys()) <2:
+        if 1 in prob_counter or 1.0 in prob_counter:
+            prob_counter[0] = 0
+        else:
+            prob_counter[1] = 0
+    
     prob_vec = [prob_counter[stance]/len(preds) for stance in sorted(prob_counter.keys())]
+    
+    if user_type == "Heterogeneous":
+        prob_vec = [prob_vec[1],prob_vec[0]]
 
     assert round(sum(prob_vec)) == 1.0
 
     return entropy(prob_vec),prob_vec
 
-def calc_entropy_and_dist_sep(preds,which_cluster):
+def calc_entropy_and_dist_sep(preds,which_cluster,user_type):
     """
     """
     # Probs - p_c1, p_c2
@@ -42,13 +74,28 @@ def calc_entropy_and_dist_sep(preds,which_cluster):
         else:
             preds_c2.append(preds[cind])
     
+    
+    preds = reflip(preds,which_cluster)
+    
     prob_count = Counter(preds)
+    
+    if len(prob_count.keys()) <2:
+        if 1 in prob_counter or 1.0 in prob_counter:
+            prob_counter[0] = 0
+        else:
+            prob_counter[1] = 0
+            
     prob_C1 = Counter(preds_c1)
     prob_C2 = Counter(preds_c2)
     
     prob_vec = [prob_count[stance]/len(preds) for stance in sorted(prob_count.keys())]
     prob_vec_c1 = [prob_C1[stance]/len(preds_c1) for stance in sorted(prob_C1.keys())]
     prob_vec_c2 = [prob_C2[stance]/len(preds_c2) for stance in sorted(prob_C2.keys())]
+    
+#     if user_type == "Heterogeneous":
+#         prob_vec = [prob_vec[1],prob_vec[0]]
+#         prob_vec_c1 = [prob_vec_c1[1],prob_vec_c1[0]]
+#         prob_vec_c2 = [prob_vec_c2[1],prob_vec_c2[0]]
     # entropy - e_c1, e_c2
     
     ent = entropy(prob_vec)
@@ -88,7 +135,8 @@ def calculate_avg_precision_param_variation(scores_,params,mode="single"):
         for cp in scores_:
             avg_prescision.append(np.mean(scores_[cp][str(param)]["precision"]))
             avg_entropy.append(scores_[cp][str(param)]["entropy"])
-            avg_dist.append(scores_[cp][str(param)]["stance_dist"])
+            if mode == "single":
+                avg_dist.append(scores_[cp][str(param)]["stance_dist"])
             if mode == "mixed":
 #                 c1_avg_precision.append(np.mean(scores_[cp][str(param)]["precision_c1"]))
                 c1_avg_precision.append(calculate_masked_avg(act_arr = scores_[cp][str(param)]["precision_c1"], 
@@ -100,6 +148,7 @@ def calculate_avg_precision_param_variation(scores_,params,mode="single"):
                                                              mask_array=scores_[cp][str(param)]["which_cluster"],cluster_=2))
                 c2_avg_entropy.append(scores_[cp][str(param)]["entropy_c2"])
 #                 c2_avg_dist.append(scores_[cp][str(param)]["stance_dist_c2"])
+                avg_dist.append(scores_[cp][str(param)]["stance_dist"])
     
         
         param_results[param]["avg_precision"] = avg_prescision
@@ -177,7 +226,8 @@ def calculate_avg_precision(scores_,mode="single"):
     for cp in scores_:
         avg_prescision.append(np.mean(scores_[cp]["logistic_regression"]["precision"]))
         avg_entropy.append(np.mean(scores_[cp]["logistic_regression"]["entropy"]))
-        avg_dist.append(scores_[cp]["logistic_regression"]["stance_dist"])
+        if mode == "single":
+            avg_dist.append(scores_[cp]["logistic_regression"]["stance_dist"])
         
         if mode == "mixed":
 #             c1_avg_precision.append(np.mean(scores_[cp]["logistic_regression"]["precision_c1"]))
@@ -189,6 +239,7 @@ def calculate_avg_precision(scores_,mode="single"):
             c2_avg_precision.append(calculate_masked_avg(act_arr = scores_[cp]["logistic_regression"]["precision_c2"], 
                                                              mask_array=scores_[cp]["logistic_regression"]["which_cluster"],cluster_=2))
             c2_avg_entropy.append(scores_[cp]["logistic_regression"]["entropy_c2"])
+            avg_dist.append(scores_[cp]["logistic_regression"]["stance_dist"])
 #             c2_avg_dist.append(scores_[cp]["logistic_regression"]["stance_dist_c2"])
             
     if mode == "single":

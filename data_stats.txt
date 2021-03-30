@@ -1,0 +1,147 @@
+....... Initializing Settings ..... 
+Random_Seed Chosen : 15112
+
+ ********** Original Dataset ******************
+
+Number of Articles : 219824
+
+Stance Distribution :
+-1.0    72072
+ 0.0    49419
+ 2.0    36053
+ 1.0    34791
+-2.0    27489
+Name: source_partisan_score, dtype: int64
+
+New's Source Distribution :
+The Hill               20449
+Washington Post        14508
+Washington Examiner    12655
+Washington Times       11084
+Fox News               10898
+Politico               10138
+Breitbart               9492
+CNN                     9221
+Reuters                 8006
+NBC                     7159
+USAToday                7121
+ABC                     6907
+DailyCaller             6547
+NYT                     6129
+NPR                     5689
+The Guardian            5471
+National Review         5062
+Vox                     4986
+AlterNet                4940
+CBS                     4933
+Forbes                  4926
+DailyWire               4657
+DailyMail               4306
+DailyBeast              3702
+Time                    3321
+The Atlantic            3284
+Slate                   3088
+MSNBC                   2923
+NYPost                  2585
+Mother Jones            2490
+The Federalist          2398
+BuzzFeed                2018
+BBC                     1864
+The Intercept           1449
+HuffPo                  1251
+CSMonitor               1093
+American Spectator      1006
+The Economist           1001
+DemocracyNow             642
+AP                       271
+Reason                   154
+Name: source, dtype: int64
+Shape Before Processing : (219824, 12)
+
+Finished running 'sample_data' in 0.0002 mins
+
+
+ ********* Sampled Dataset ********************
+
+Number of Articles : 100000
+
+Stance Distribution :
+-1.0    42320
+ 2.0    21232
+ 1.0    20374
+-2.0    16074
+Name: source_partisan_score, dtype: int64
+
+New's Source Distribution :
+Washington Post        8494
+Washington Examiner    7340
+Washington Times       6502
+Fox News               6449
+Politico               5953
+Breitbart              5686
+CNN                    5338
+NBC                    4245
+ABC                    4116
+DailyCaller            3804
+NYT                    3577
+The Guardian           3226
+National Review        3007
+Vox                    2927
+CBS                    2907
+AlterNet               2877
+DailyWire              2675
+DailyMail              2568
+DailyBeast             2145
+Time                   1952
+The Atlantic           1925
+Slate                  1845
+MSNBC                  1702
+NYPost                 1487
+Mother Jones           1449
+The Federalist         1428
+BuzzFeed               1178
+The Intercept           860
+HuffPo                  722
+The Economist           587
+American Spectator      577
+DemocracyNow            369
+Reason                   83
+Name: source, dtype: int64
+
+ ********* Sampled Dataset Extreme Stances Only ********************
+
+Number of Articles : 37306
+
+Stance Distribution :
+ 2.0    21232
+-2.0    16074
+Name: source_partisan_score, dtype: int64
+
+New's Source Distribution :
+Breitbart             5686
+DailyCaller           3804
+National Review       3007
+Vox                   2927
+AlterNet              2877
+DailyWire             2675
+DailyMail             2568
+DailyBeast            2145
+Slate                 1845
+MSNBC                 1702
+NYPost                1487
+Mother Jones          1449
+The Federalist        1428
+BuzzFeed              1178
+The Intercept          860
+HuffPo                 722
+American Spectator     577
+DemocracyNow           369
+Name: source, dtype: int64
+Running : select_first10
+Running : to_lower
+Running : remove_punc
+Running : remove_small_words
+Running : remove_spaces
+
+Finished running 'preprocess_texts' in 0.1401 mins
+

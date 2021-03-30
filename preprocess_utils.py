@@ -38,13 +38,16 @@ def preprocess_texts(text_lists):
     def remove_punc(x):
         return x.translate(str.maketrans('', '', string.punctuation))
     
+    def remove_non_alpha_numeric(x):
+        return re.sub("[^0-9a-zA-Z]+", " ", x)
+    
     def remove_small_words(x):
-        return re.sub(r'\b\w{1,2}\b', '', x)
+        return re.sub(r'\b\w{1}\b', '', x)
     
     def remove_spaces(x):
         return re.sub(' +', ' ', x)
     
-    preprocess_pipe = [select_first10,to_lower,remove_punc,remove_small_words,remove_spaces]
+    preprocess_pipe = [select_first10,to_lower,remove_punc,remove_small_words,remove_spaces,remove_non_alpha_numeric]
     
     processed_texts = text_lists
     for preprocess_func in preprocess_pipe:

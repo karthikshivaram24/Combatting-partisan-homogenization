@@ -141,7 +141,7 @@ def run_online_setting_active(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,us
                 scores_map[model]["recall"].append(recall)
                 scores_map[model]["accuracy"].append(accuracy) 
             
-            entropy, stance_dist = calc_entropy_and_dist(y_preds)
+            entropy, stance_dist = calc_entropy_and_dist(y_preds,user_type=user_type)
             scores_map[model]["entropy"] = entropy
             scores_map[model]["stance_dist"]= stance_dist
         
@@ -236,7 +236,7 @@ def run_bs2_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,user_type=
                 scores_map[model]["precision"].append(precision)
                 scores_map[model]["recall"].append(recall)
             
-            entropy, stance_dist = calc_entropy_and_dist(y_preds)
+            entropy, stance_dist = calc_entropy_and_dist(y_preds,user_type=user_type)
             scores_map[model]["entropy"] = entropy
             scores_map[model]["stance_dist"]= stance_dist
         
@@ -347,7 +347,7 @@ def run_bs3_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,cluster_2_
                 scores_map[model]["precision"].append(precision)
                 scores_map[model]["recall"].append(recall)
                 
-            entropy, stance_dist = calc_entropy_and_dist(y_preds)
+            entropy, stance_dist = calc_entropy_and_dist(y_preds,user_type=user_type)
             scores_map[model]["entropy"] = entropy
             scores_map[model]["stance_dist"]= stance_dist
         
@@ -433,7 +433,7 @@ def run_bs4_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                 scores_map[str(regc)]["precision"].append(precision)
                 scores_map[str(regc)]["recall"].append(recall)
             
-            entropy, stance_dist = calc_entropy_and_dist(y_preds)
+            entropy, stance_dist = calc_entropy_and_dist(y_preds,user_type=user_type)
             scores_map[str(regc)]["entropy"] = entropy
             scores_map[str(regc)]["stance_dist"]= stance_dist
                 
@@ -508,7 +508,7 @@ def run_bs5_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                 scores_map[str(l_r)]["precision"].append(precision)
                 scores_map[str(l_r)]["recall"].append(recall)
 
-            entropy, stance_dist = calc_entropy_and_dist(y_preds)
+            entropy, stance_dist = calc_entropy_and_dist(y_preds,user_type=user_type)
             scores_map[str(l_r)]["entropy"] = entropy
             scores_map[str(l_r)]["stance_dist"]= stance_dist
                 
@@ -684,7 +684,7 @@ def run_bs6_train_all(X,
                 scores_map[model]["recall_c1"].append(recall_c1)
                 scores_map[model]["recall_c2"].append(recall_c2)
             
-            ent, ent_c1, ent_c2, prob_vec, prob_vec_c1, prob_vec_c2 = calc_entropy_and_dist_sep(y_preds,scores_map[model]["which_cluster"])
+            ent, ent_c1, ent_c2, prob_vec, prob_vec_c1, prob_vec_c2 = calc_entropy_and_dist_sep(y_preds,scores_map[model]["which_cluster"],user_type=user_type)
             
             scores_map[model]["entropy"] = ent
             scores_map[model]["entropy_c1"] = ent_c1
@@ -841,7 +841,7 @@ def run_bs7_train_all(X,cluster_2_doc_map,df,cluster_pairs,cosine_mat,
                 scores_map[str(l_r)]["recall_c1"].append(recall_c1)
                 scores_map[str(l_r)]["recall_c2"].append(recall_c2)
             
-            ent, ent_c1, ent_c2, prob_vec, prob_vec_c1, prob_vec_c2 = calc_entropy_and_dist_sep(y_preds,scores_map[str(l_r)]["which_cluster"])
+            ent, ent_c1, ent_c2, prob_vec, prob_vec_c1, prob_vec_c2 = calc_entropy_and_dist_sep(y_preds,scores_map[str(l_r)]["which_cluster"],user_type=user_type)
             
             scores_map[str(l_r)]["entropy"] = ent
             scores_map[str(l_r)]["entropy_c1"] = ent_c1

@@ -1,4 +1,7 @@
 # Folders to Ignore
+*.csv
+*.pickle
+*.pkl
 
 Bert_embed_files/
 Embeddings/
