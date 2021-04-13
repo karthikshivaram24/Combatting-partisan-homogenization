@@ -1,7 +1,7 @@
 import torch
 import pickle
 from transformers import BertModel, BertTokenizer
-from general_utils import timer
+from Scripts.utils.general_utils import timer
 import os
 import numpy as np
 

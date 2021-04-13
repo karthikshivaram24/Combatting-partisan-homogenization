@@ -1,5 +1,5 @@
-from general_utils import timer
-from config import RANDOM_SEED
+from Scripts.utils.general_utils import timer
+from Scripts.utils.config import RANDOM_SEED
 from sklearn.cluster import KMeans, MiniBatchKMeans
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import Counter, defaultdict

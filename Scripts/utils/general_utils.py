@@ -1,6 +1,6 @@
 from functools import wraps
 from time import time
-from config import RANDOM_SEED
+from Scripts.utils.config import RANDOM_SEED
 import functools
 import numpy as np
 from collections import Counter

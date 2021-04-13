@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-from general_utils import timer
-from config import RANDOM_SEED
+from Scripts.utils.general_utils import timer
+from Scripts.utils.config import RANDOM_SEED
 from collections import defaultdict,Counter
 
 @timer

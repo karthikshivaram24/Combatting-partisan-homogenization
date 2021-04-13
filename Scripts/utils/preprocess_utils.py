@@ -1,10 +1,10 @@
-from general_utils import timer
+from Scripts.utils.general_utils import timer
 from functools import partial
 from joblib import Parallel, delayed
 from nltk.tokenize import sent_tokenize, word_tokenize
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.decomposition import PCA, TruncatedSVD
-from config import RANDOM_SEED, min_df, max_df, GLOVE_PATH, W2V_PATH, ELMO_PATH, FASTTEXT_PATH
+from Scripts.utils.config import RANDOM_SEED, min_df, max_df, GLOVE_PATH, W2V_PATH, ELMO_PATH, FASTTEXT_PATH
 import re
 import pandas as pd
 import string

@@ -1,8 +1,8 @@
-from general_utils import timer
-from config import RANDOM_SEED
-from preprocess_utils import preprocess_texts, tfidf_vectorization, dimensionality_reduction
-from clustering_utils import run_clustering, get_cluster_sizes, score_cluster, get_cluster_pairs, get_pairwise_dist, cluster2doc, filter_clusters, get_top_100_clusterpairs
-from data_utils import load_data, sample_data, balanced_sampling, create_train_test
+from Scripts.utils.general_utils import timer
+from Scripts.utils.config import RANDOM_SEED
+from Scripts.utils.preprocess_utils import preprocess_texts, tfidf_vectorization, dimensionality_reduction
+from Scripts.utils.clustering_utils import run_clustering, get_cluster_sizes, score_cluster, get_cluster_pairs, get_pairwise_dist, cluster2doc, filter_clusters, get_top_100_clusterpairs
+from Scripts.utils.data_utils import load_data, sample_data, balanced_sampling, create_train_test
 from collections import Counter, defaultdict
 import numpy as np
 import pandas as pd
@@ -15,12 +15,12 @@ import pickle
 import torch
 import pickle
 from transformers import BertModel, BertTokenizer
-from general_utils import timer
+from Scripts.utils.general_utils import timer
 import os
-from bert_utils import load_model, load_tokenizer, batch_text_gen, tokenize_bert, load_bert_output
+from Scripts.utils.bert_utils import load_model, load_tokenizer, batch_text_gen, tokenize_bert, load_bert_output
 import torch
 import pickle
-from general_utils import timer
+from Scripts.utils.general_utils import timer
 import h5py
 import string
 

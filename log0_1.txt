@@ -1,0 +1,31 @@
+....... Initializing Settings ..... 
+Random_Seed Chosen : 15112
+Namespace(at='True', cluster_pair='(14, 44)', cuda_device='0', task='single')
+Dataset Shape : (95120, 9)
+Setting : Single Task with Attention
+Original Train Shape : (1394, 9)
+Original Test Shape : (1189, 9)
+
+Sample size from C1 in Train : (975, 10)
+1 : 423
+0 : 552
+
+Sample size from C2 in Train : (97, 10)
+1 : 50
+0 : 47
+
+Train Size : (1072, 10)
+1 : 473
+0 : 599
+
+Sample Size from C1 in Test : (419, 10)
+1 : 174
+0 : 245
+
+Sample Size from C2 in Test : (419, 10)
+1 : 215
+0 : 204
+
+Test Size : (838, 10)
+1 : 389
+0 : 449
