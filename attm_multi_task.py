@@ -197,7 +197,7 @@ class AttentionMT(nn.Module):
         attention_wcprod_batch = torch.cat(attention_wcprod_batch,dim=0) # shape (N,1)
         context_pred = self.sigmoid(attention_wcprod_batch).unsqueeze(-1) # shape (N,1)
     
-        return y_pred, context_pred, attention_cvector_batch
+        return y_pred, context_pred, attention_cvector_batch, attention_all_norm
 
 def reset_weights(m):
     """
