@@ -8,7 +8,8 @@ def random_search_lr(n,max_lr=0.001,min_lr=0.0000001):
     lrs = (np.random.rand(n) * range_size + min_lr).tolist()
     return lrs
 
-lr = [0.001,0.0001,0.00001]
+# lr = [0.001,0.0001,0.00001]
+lr = [0.001]
 word_weights = [0.1,0.4,0.8]
 print("Learning Rates Used : \n%s"%str(lr))
 epochs = 5

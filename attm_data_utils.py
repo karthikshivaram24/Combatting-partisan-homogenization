@@ -2,6 +2,8 @@ from collections import Counter, defaultdict
 from Scripts.utils.bert_utils import load_tokenizer
 import Scripts.utils.config as CONFIG
 from sklearn.model_selection import train_test_split
+from Scripts.utils.clustering_utils import run_clustering, get_cluster_sizes, score_cluster, get_cluster_pairs, get_pairwise_dist, cluster2doc, filter_clusters, get_top_100_clusterpairs
+from Scripts.utils.general_utils import timer
 import numpy as np
 import pandas as pd
 import random
@@ -170,6 +172,57 @@ def sample_context_words_neg(text,vocab_idf,tokenizer,neg_sample_num=3):
     
     return context_words
 
+
+def get_cluster_pairs_top(df,vectors,sample_size=3):
+    """
+    """
+    # Now drop the rows with Nones for context_word_pos and similarly do the same to the embeddings
+    
+    df["drop_"] = df['context_word_pos'].apply(lambda x: x == ["DROP_THIS"]*sample_size)
+    
+    indices_to_drop = df.index[df['drop_'] == True].tolist()
+    print("Indices to drop : %s" %str(len(indices_to_drop)))
+    clean_df = df.drop(df.index[indices_to_drop])
+    clean_df.reset_index(drop=True,inplace=True)
+    print(clean_df.head(2))
+    print("New Df Shape : %s" %str(clean_df.shape))
+    
+    vectors = np.delete(vectors,indices_to_drop,axis=0)
+    
+    clusters,cluster_clf = run_clustering(vectors=vectors,
+                                              seed=CONFIG.RANDOM_SEED,
+                                              num_clusters=CONFIG.num_clusters,
+                                              clus_type="kmeans")
+    
+    doc_2_cluster_map = cluster2doc(num_texts= clean_df.shape[0],
+                                    cluster_labels=cluster_clf.labels_)
+    
+    
+    cluster_sizes = get_cluster_sizes(cluster_clf)
+    
+    cluster_pairs = get_cluster_pairs(num_clusters=CONFIG.num_clusters)
+    
+    filtered_cluster_pairs = filter_clusters(cluster_pairs=cluster_pairs,
+                                            doc_2_cluster_map=doc_2_cluster_map,
+                                            cluster_sizes=cluster_sizes,
+                                            partisan_scores=clean_df["binary_ps"].tolist(),
+                                            min_size=CONFIG.min_cluster_size,
+                                            max_size=CONFIG.max_cluster_size,
+                                            min_partisan_size=CONFIG.min_partisan_size)
+    
+    top100 = None
+    
+    if len(filtered_cluster_pairs) > 100:
+        print("\nNumber of Filtered Cluster Pairs are greater 100, picking top 100 most similar cluster pairs")
+        cluster_pair_dist_mat = get_pairwise_dist(cluster_clf,dist_type="cosine")
+        top100 = get_top_100_clusterpairs(cluster_pairs=filtered_cluster_pairs,dist_matrix=cluster_pair_dist_mat,reverse=True)
+        
+    else:
+        top100 = filtered_cluster_pairs
+        print("\nNumber of Filtered Cluster Pairs is less than 100 so skipping top 100 selection")
+    
+    return clean_df , doc_2_cluster_map, top100 
+
 def gen_samples(df,neg_sample_size=3):
     """
     columns = processed_text,processed_title, context_word_pos, context_word_neg
@@ -271,7 +324,9 @@ def get_train_test_ssda(df,cp,doc_2_cluster_map,neg_sample_size=3,single_task=Tr
     c1_df["which_cluster"] = [1]*c1_df.shape[0]
     c2_df["which_cluster"] = [2]*c2_df.shape[0]
     
-    c1_train, c1_test = train_test_split(c1_df,test_size=0.30, random_state=CONFIG.RANDOM_SEED)
+    c1_train, c1_test = train_test_split(c1_df,test_size=0.20, random_state=CONFIG.RANDOM_SEED)
+    
+    c1_train, c1_val = train_test_split(c1_train,test_size=0.10, random_state=CONFIG.RANDOM_SEED)
     
     c1_train_num = c1_train.shape[0]
     
@@ -295,7 +350,7 @@ def get_train_test_ssda(df,cp,doc_2_cluster_map,neg_sample_size=3,single_task=Tr
     else:
         get_label_dist(train["class_label"].tolist())
     
-    c2_test_,_ = train_test_split(c2_df_test,train_size=c1_test.shape[0], random_state=CONFIG.RANDOM_SEED)
+    c2_test_,c2_val_temp = train_test_split(c2_df_test,train_size=c1_test.shape[0], random_state=CONFIG.RANDOM_SEED)
     
     print("\nSample Size from C1 in Test : %s" %str(c1_test.shape))
     if single_task:
@@ -314,8 +369,28 @@ def get_train_test_ssda(df,cp,doc_2_cluster_map,neg_sample_size=3,single_task=Tr
         get_label_dist(test["binary_ps"].tolist())
     else:
         get_label_dist(test["class_label"].tolist())
+        
+    c2_val , _ = train_test_split(c2_val_temp,train_size=c1_val.shape[0], random_state=CONFIG.RANDOM_SEED)
     
     train = train.sample(frac=1.0,random_state=int(CONFIG.RANDOM_SEED * 0.01))
     test = test.sample(frac=1.0,random_state=int(CONFIG.RANDOM_SEED * 0.1))
     
-    return train,test
+    val = pd.concat([c1_val,c2_val],axis=0)
+    print("\nSample size from C1 in Val : %s" %str(c1_val.shape))
+    if single_task:
+        get_label_dist(c1_val["binary_ps"].tolist())
+    else:
+        get_label_dist(c1_val["class_label"].tolist())
+    print("\nSample size from C2 in Val : %s" %str(c2_val.shape))
+    if single_task:
+        get_label_dist(c2_val["binary_ps"].tolist())
+    else:
+        get_label_dist(c2_val["class_label"].tolist())
+    print("\nVal Size : %s" %str(val.shape))
+    if single_task:
+        get_label_dist(val["binary_ps"].tolist())
+    else:
+        get_label_dist(val["class_label"].tolist())
+    val = val.sample(frac=1.0,random_state=int(CONFIG.RANDOM_SEED * 0.01))
+    
+    return train,test,val

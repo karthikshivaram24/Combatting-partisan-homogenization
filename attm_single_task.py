@@ -26,6 +26,10 @@ class AttentionST(nn.Module):
                                        out_features=1,
                                        bias=False)
         
+        self.intermed = nn.Linear(in_features=embedding_size, 
+                                  out_features=embedding_size,
+                                  bias=True)
+        
         self.recom_pred = nn.Linear(in_features=embedding_size,
                                     out_features=1,
                                     bias=True)
@@ -69,22 +73,26 @@ class AttentionST(nn.Module):
             attention_cvector = bert_layer12_hidden_states.T.mul(attentions).sum(dim=1) # shape (N,768,1) *** s_i ***
 
             y_pred = self.sigmoid(self.recom_pred(attention_cvector.T))
+            
+            return y_pred, attention_cvector
         
         else:
             # Use cls token for prediction
             y_pred = self.sigmoid(self.recom_pred(bert_layer12_hidden_states[0,:]))
+            
+            return y_pred,None
 
         
-        if self.verbose:
-            print("\nShape Details :")
-            print("1. Bert Embeddings Shape : %s" %str(bert_layer12_hidden_states.size()))
-            print("2. attention_un Shape : %s" %str(attention_un.size()))
-            print("3. attention_norm Shape : %s" %str(attentions.size()))
-            print("4. attention_cvector shape : %s" %str(attention_cvector.size()))
-            print("5. y_pred shape : %s" %str(y_pred.size()))
-            print(str(y_pred.item()))
+#         if self.verbose:
+#             print("\nShape Details :")
+#             print("1. Bert Embeddings Shape : %s" %str(bert_layer12_hidden_states.size()))
+#             print("2. attention_un Shape : %s" %str(attention_un.size()))
+#             print("3. attention_norm Shape : %s" %str(attentions.size()))
+#             print("4. attention_cvector shape : %s" %str(attention_cvector.size()))
+#             print("5. y_pred shape : %s" %str(y_pred.size()))
+#             print(str(y_pred.item()))
         
-        return y_pred, attention_cvector
+#         return y_pred, attention_cvector
     
     def forward_batch(self,
                       bert_tokenized_words_batch):

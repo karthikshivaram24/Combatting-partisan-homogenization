@@ -17,6 +17,20 @@ class AttentionMT(nn.Module):
                                    out_features=1,
                                    bias=False)
         
+        # New stuff trial
+        self.attention2 = nn.Linear(in_features=embedding_size, 
+                                    out_features=1, bias=False)
+        
+        self.attention_combine = nn.Linear(in_features=1000,out_features=500,bias=False)
+        
+        self.interm_word = nn.Linear(in_features=embedding_size,
+                                    out_features=embedding_size,
+                                    bias=True)
+        
+        self.word_pred = nn.Linear(in_features=1,
+                                   out_features=1,
+                                   bias=True)
+        
         # Recommendation Network
         # ------------------------
         
@@ -66,6 +80,7 @@ class AttentionMT(nn.Module):
         attentions = self.softmax(attention_un) # shape (N,max_length,1) ***  a_it ***
         attention_cvector = bert_layer12_hidden_states.T.mul(attentions).sum(dim=1) # shape (N,768,1) *** s_i ***
         y_pred = self.sigmoid(self.recom_pred(attention_cvector.T))
+        
         
         # ************** Word Prediction Network ********************
         context_word_embed_bert = self.bert(input_ids=bert_tokenized_word_to_predict)
@@ -138,11 +153,28 @@ class AttentionMT(nn.Module):
         # Normalized Word Attentions
         attentions_norm_batch = self.softmax(atten_un_batch).squeeze(-1) # should have shape (N,500) or (N,500,1)
         
+        atten_un_batch_2 = []
+        for item_in_batch in range(bert_layer12_hidden_states.size(0)):
+            atten_un_sent = []
+            for word_in_sent in range(bert_layer12_hidden_states.size(1)):
+                word_atten_un = self.attention2(bert_layer12_hidden_states[item_in_batch,word_in_sent,:]).unsqueeze(0) # should be of size [1,1]
+                atten_un_sent.append(word_atten_un)  
+            
+            atten_un_sent = torch.cat(atten_un_sent,dim=0).T # should have shape (1,500)
+            atten_un_batch_2.append(atten_un_sent)
+        
+        atten_un_batch_2 = torch.cat(atten_un_batch_2,dim=0) # should have shape (N,500)
+        
+        attentions_norm_batch2 = self.softmax(atten_un_batch_2).squeeze(-1)
+        
+        
+        attention_all_norm = self.attention_combine(torch.cat((attentions_norm_batch,attentions_norm_batch2),dim=1))
+        
         # Sentence Context vector
         attention_cvector_batch = []
         
         for item_in_batch in range(bert_layer12_hidden_states.size(0)):
-            attention_cvector = bert_layer12_hidden_states[item_in_batch,:,:].T.mul(attentions_norm_batch[item_in_batch,:]).sum(dim=1) # shape (1,768)
+            attention_cvector = bert_layer12_hidden_states[item_in_batch,:,:].T.mul(attention_all_norm[item_in_batch,:]).sum(dim=1) # shape (1,768)
             attention_cvector_batch.append(attention_cvector.unsqueeze(0)) 
         
         
@@ -159,7 +191,7 @@ class AttentionMT(nn.Module):
         for item_in_batch in range(context_word_embed_bert_layer_12.size(0)):
             
             attention_wc_prod = torch.mul(attention_cvector_batch[item_in_batch,:],
-                                          context_word_embed_bert_layer_12[item_in_batch,:,:]).sum(dim=1) # shape (1,1)
+                                          self.sigmoid(self.interm_word(context_word_embed_bert_layer_12[item_in_batch,:,:]))).sum(dim=1) # shape (1,1)
             attention_wcprod_batch.append(attention_wc_prod)
         
         attention_wcprod_batch = torch.cat(attention_wcprod_batch,dim=0) # shape (N,1)
