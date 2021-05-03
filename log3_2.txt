@@ -1,0 +1,119 @@
+....... Initializing Settings ..... 
+Random_Seed Chosen : 15112
+Learning Rates Used : 
+[0.001, 0.0001]
+Namespace(at='False', cluster_pair='(22, 36)', cuda_device='0', task='single')
+Dataset Shape : (95120, 9)
+Setting : Single Task without Attention
+Original Train Shape : (1264, 9)
+Original Test Shape : (1205, 9)
+
+Sample size from C1 in Train : (909, 10)
+1 : 380
+0 : 529
+
+Sample size from C2 in Train : (90, 10)
+1 : 55
+0 : 35
+
+Train Size : (999, 10)
+1 : 435
+0 : 564
+
+Sample Size from C1 in Test : (253, 10)
+1 : 99
+0 : 154
+
+Sample Size from C2 in Test : (253, 10)
+1 : 140
+0 : 113
+
+Test Size : (506, 10)
+1 : 239
+0 : 267
+
+Sample size from C1 in Val : (102, 10)
+1 : 43
+0 : 59
+
+Sample size from C2 in Val : (102, 10)
+1 : 56
+0 : 46
+
+Val Size : (204, 10)
+1 : 99
+0 : 105
+Avg Batch Loss Train : 0.690228938110291
+Avg Batch Loss Val : 0.7145989995736343
+Avg Batch Loss Train : 0.6606100324600462
+Avg Batch Loss Val : 0.7422291086270258
+Avg Batch Loss Train : 0.6477667840700301
+Avg Batch Loss Val : 0.7782618036636939
+Avg Batch Loss Train : 0.6417165862189399
+Avg Batch Loss Val : 0.789572692834414
+Avg Batch Loss Train : 0.6266302277171423
+Avg Batch Loss Val : 0.8073244782594534
+Y1 Pred Dist : 
+1 : 84
+0 : 915
+Predicted Label Shape : (999,)
+True Label Shape : (999,)
+Predicted Label Shape : (909,)
+True Label Shape : (909,)
+Predicted Label Shape : (90,)
+True Label Shape : (90,)
+
+Finished running 'evaluate_st' in 0.4475 mins
+
+Y1 Pred Dist : 
+1 : 58
+0 : 448
+Predicted Label Shape : (506,)
+True Label Shape : (506,)
+Predicted Label Shape : (253,)
+True Label Shape : (253,)
+Predicted Label Shape : (253,)
+True Label Shape : (253,)
+
+Finished running 'evaluate_st' in 0.2289 mins
+
+
+Finished running 'run_ssda_ST' in 3.6327 mins
+
+Avg Batch Loss Train : 0.6814680298169454
+Avg Batch Loss Val : 0.7119419253789462
+Avg Batch Loss Train : 0.6775837625776019
+Avg Batch Loss Val : 0.7127697101006141
+Avg Batch Loss Train : 0.6710898828884911
+Avg Batch Loss Val : 0.7107563614845276
+Avg Batch Loss Train : 0.6688607410779075
+Avg Batch Loss Val : 0.7148286058352544
+Avg Batch Loss Train : 0.6645225504088024
+Avg Batch Loss Val : 0.7158156679226801
+Y1 Pred Dist : 
+1 : 12
+0 : 987
+Predicted Label Shape : (999,)
+True Label Shape : (999,)
+Predicted Label Shape : (909,)
+True Label Shape : (909,)
+Predicted Label Shape : (90,)
+True Label Shape : (90,)
+
+Finished running 'evaluate_st' in 0.4638 mins
+
+Y1 Pred Dist : 
+1 : 20
+0 : 486
+Predicted Label Shape : (506,)
+True Label Shape : (506,)
+Predicted Label Shape : (253,)
+True Label Shape : (253,)
+Predicted Label Shape : (253,)
+True Label Shape : (253,)
+
+Finished running 'evaluate_st' in 0.2289 mins
+
+
+Finished running 'run_ssda_ST' in 3.6436 mins
+
