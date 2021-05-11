@@ -36,6 +36,8 @@ def print_res(scores_):
     df["ROC_AUC"] = auc_roc_scores
     df["Accuracy"] = accuracy_scores
     
+    df = df[df.Output_type != "word_scores"]
+    
     return df
 
 

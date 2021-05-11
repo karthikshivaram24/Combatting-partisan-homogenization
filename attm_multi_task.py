@@ -2,10 +2,11 @@ import torch
 from torch import nn
 from transformers import BertModel, BertTokenizer
 
-class AttentionMT(nn.Module):
+
+class AttentionMTUpdated(nn.Module):
     
     def __init__(self,embedding_size=768,verbose=True,which_forward=2,dropout=0.1):
-        super(AttentionMT,self).__init__()
+        super(AttentionMTUpdated,self).__init__()
         
         self.verbose = verbose
         self.bert = BertModel.from_pretrained('bert-base-uncased', output_hidden_states=True)
@@ -21,13 +22,13 @@ class AttentionMT(nn.Module):
         self.attention2 = nn.Linear(in_features=embedding_size, 
                                     out_features=1, bias=False)
         
-        self.attention_combine = nn.Linear(in_features=1000,out_features=500,bias=False)
+        self.attention_combine = nn.Linear(in_features=2*embedding_size,out_features=embedding_size,bias=False)
         
         self.interm_word = nn.Linear(in_features=embedding_size,
                                     out_features=embedding_size,
                                     bias=True)
         
-        self.dropout_word = nn.Dropout(dropout)
+        self.dropout = nn.Dropout(dropout)
         
         self.word_pred = nn.Linear(in_features=1,
                                    out_features=1,
@@ -35,12 +36,6 @@ class AttentionMT(nn.Module):
         
         # Recommendation Network
         # ------------------------
-        
-        self.dropout_recom = nn.Dropout(dropout)
-        
-        self.interm_art = nn.Linear(in_features=embedding_size,
-                                    out_features=embedding_size,
-                                    bias=True)
         
         self.recom_pred = nn.Linear(in_features=embedding_size,
                                     out_features=1,
@@ -53,170 +48,70 @@ class AttentionMT(nn.Module):
         
         # Sigmoid Activation
         self.sigmoid = nn.Sigmoid()
-        
-        self.which_forward = which_forward
     
-    def forward(self,bert_tokenized_words,bert_tokenized_word_to_predict):
+    def forward(self,bert_tokenized_words,attention_masks,bert_tokenized_word_to_predict):
         """
         """
-        if self.which_forward == 1:
-            return self.forward_single(bert_tokenized_words,bert_tokenized_word_to_predict)
-        if self.which_forward == 2:
-            return self.forward_batch(bert_tokenized_words,bert_tokenized_word_to_predict)
-        if self.which_forward == 3:
-            return self.forward_batch_optim(bert_tokenized_words,bert_tokenized_word_to_predict)
         
-    def forward_single(self,
-                bert_tokenized_words,
-                bert_tokenized_word_to_predict):
-        """
-        Inputs:
-        ------
+        # Recommendation Part
         
-        Outputs:
-        --------
-        """
-        
-        # ************ Recommendation Network ********************
-        
-        # output shape should be (max_length,dim)
-        bert_output = self.bert(input_ids=bert_tokenized_words)
-        bert_hidden_states  = bert_output[2]
-        bert_layer12_hidden_states = bert_hidden_states[-1][0,:,:]
-
-        attention_un = torch.cat([self.attention(self.sigmoid(self.dropout_recom(self.interm_art(embedding)))) for embedding in bert_layer12_hidden_states])  # shape (N,max_length,1) *** u_it **
-        attentions = self.softmax(attention_un) # shape (N,max_length,1) ***  a_it ***
-        attention_cvector = bert_layer12_hidden_states.T.mul(attentions).sum(dim=1) # shape (N,768,1) *** s_i ***
-        y_pred = self.sigmoid(self.recom_pred(attention_cvector.T))
-        
-        
-        # ************** Word Prediction Network ********************
-        context_word_embed_bert = self.bert(input_ids=bert_tokenized_word_to_predict)
-        context_word_embed_bert_hs = context_word_embed_bert[2]
-        context_word_embed_bert_layer_12 = context_word_embed_bert_hs[-1][0,:,:]
-        
-        context_pred = self.sigmoid(torch.mul(attention_cvector,context_word_embed_bert_layer_12).sum(dim=1))
-        
-        if self.verbose:
-            print("\nShape Details :")
-            print("1. Bert Embeddings Shape : %s" %str(bert_layer12_hidden_states.size()))
-            print("2. attention_un Shape : %s" %str(attention_un.size()))
-            print("3. attention_norm Shape : %s" %str(attentions.size()))
-            print("4. attention_cvector shape : %s" %str(attention_cvector.size()))
-            print("5. y_pred shape : %s" %str(y_pred.size()))
-            print(str(y_pred.item()))
-            print("6. context_word_embed_bert shape : %s" %str(context_word_embed_bert_layer_12.size()))
-            print("7. context_pred shape : %s" %str(context_pred.size()))
-            print(str(context_pred.item()))
-        
-        return y_pred, context_pred, attention_cvector
-    
-
-    def forward_batch(self,
-                      bert_tokenized_words_batch,
-                      bert_tokenized_word_to_predict_batch):
-        """
-        Shape Details :
-        
-        when considering single samples
-        1. Bert Embeddings Shape : torch.Size([500, 768])
-        2. attention_un Shape : torch.Size([500])
-        3. attention_norm Shape : torch.Size([500])
-        4. attention_cvector shape : torch.Size([768])
-        5. y_pred shape : torch.Size([1])
-        0.5326072573661804
-        6. context_word_embed_bert shape : torch.Size([1, 768])
-        7. context_pred shape : torch.Size([1])
-        
-        when considering batches
-        1. Bert Embeddings Shape : (N,500,768)-> Done
-        2. attention_un Shape : (N,500)
-        3. attention_norm Shape : (N,500)
-        4. attention_cvector Shape : (N,768)
-        5. ypred Shape : (N,1)
-        6. context_word_embed_bert shape : torch.Size([N, 768])
-        7. context_pred shape : torch.Size([N,1])
-        
-        """
-        
-        # ************* REC NETWORK *********************
-        
-        bert_output = self.bert(input_ids=bert_tokenized_words_batch)
+        bert_output = self.bert(input_ids=bert_tokenized_words,attention_mask=attention_masks)
         bert_hidden_states  = bert_output[2]
         bert_layer12_hidden_states = bert_hidden_states[-1]
         
-        atten_un_batch = []
-        atten_un_batch_2 = []
-            
-        for item_in_batch in range(bert_layer12_hidden_states.size(0)):
-            atten_un_sent = []
-            atten_un_sent2 = []
-            for word_in_sent in range(bert_layer12_hidden_states.size(1)):
-                # Linear Layer Output 
-                interim_layer_out = self.sigmoid(self.dropout_recom(self.interm_art(bert_layer12_hidden_states[item_in_batch,word_in_sent,:])))
-                # Word Weights
-                word_atten_un = self.attention(interim_layer_out).unsqueeze(0)
-                word_atten_un_2 = self.attention2(interim_layer_out).unsqueeze(0)
-                    
-                atten_un_sent.append(word_atten_un)
-                atten_un_sent2.append(word_atten_un_2)
+        # iterate over articles in a given batch
+        attention_vector_batch = []
+#         attention_vector_batch_2 = []
+
+        for sent in range(bert_layer12_hidden_states.size(0)):
+
+            sent_embed_matrix = bert_layer12_hidden_states[sent,:,:] # 500 x 768
+
+            word_weights = self.dropout(self.attention(sent_embed_matrix)).squeeze()
+
+            self.normalized_word_weights = self.softmax(word_weights) # input is 500 x 1, output is 500 x 1
+
+            attention_vector = sent_embed_matrix.T .mul(self.normalized_word_weights).sum(dim=1)
+
+            attention_vector_batch.append(attention_vector.unsqueeze(-1).T) 
                 
-            # Weight sets for the sentence
-            atten_un_sent = torch.cat(atten_un_sent,dim=0).T
-            atten_un_sent2 = torch.cat(atten_un_sent2,dim=0).T
                 
-            # Update for batch
-            atten_un_batch.append(atten_un_sent)
-            atten_un_batch_2.append(atten_un_sent2)
+                
+#             word_weights_2 = self.tanh(self.dropout(self.attention2(sent_embed_matrix))).squeeze()
+
+#             self.normalized_word_weights_2 = self.softmax(word_weights_2) # input is 500 x 1, output is 500 x 1
+
+#             attention_vector_2 = sent_embed_matrix.T .mul(self.normalized_word_weights_2).sum(dim=1)
+
+#             attention_vector_batch_2.append(attention_vector_2.unsqueeze(-1).T) 
+                
+                
+
+        attention_vector_batch = torch.cat(attention_vector_batch,dim=0) # we get (batch_size,768)
+#         attention_vector_batch_2 = torch.cat(attention_vector_batch_2,dim=0)
             
-        # Convert list to tensor
-        atten_un_batch = torch.cat(atten_un_batch,dim=0)
-        atten_un_batch_2 = torch.cat(atten_un_batch_2,dim=0)
-            
-        # Normalize weight sets
-        attentions_norm_batch = self.softmax(atten_un_batch).squeeze(-1)
-        attentions_norm_batch2 = self.softmax(atten_un_batch_2).squeeze(-1)
-            
-        # Combine weight sets
-        attention_all_norm = self.attention_combine(torch.cat((attentions_norm_batch,attentions_norm_batch2),dim=1))
-        
-        # Sentence Context vector
-        attention_cvector_batch = []
-        
-        for item_in_batch in range(bert_layer12_hidden_states.size(0)):
-            attention_cvector = bert_layer12_hidden_states[item_in_batch,:,:].T.mul(attention_all_norm[item_in_batch,:]).sum(dim=1) # shape (1,768)
-            attention_cvector_batch.append(attention_cvector.unsqueeze(0)) 
+#         total_attention = torch.cat([attention_vector_batch,attention_vector_batch_2],dim=1)
+
+        y_preds = self.sigmoid(self.recom_pred(attention_vector_batch))
         
         
-        attention_cvector_batch = torch.cat(attention_cvector_batch,dim=0) # shape (N,768) *** s_i ***
+        # Word Prediction Part
         
-        # Output Layer 1
-        # Dropout can go after self.recom_pred
-        y_pred = self.sigmoid(self.recom_pred(attention_cvector_batch)) # shape (N,1)
-        # **************** WORD PRED NETWORK ****************   
-        context_word_embed_bert = self.bert(input_ids=bert_tokenized_word_to_predict_batch)
+        context_word_embed_bert = self.bert(input_ids=bert_tokenized_word_to_predict)
         context_word_embed_bert_hs = context_word_embed_bert[2]
         context_word_embed_bert_layer_12 = context_word_embed_bert_hs[-1] # shape (N,1,768)
         
-        # Another dropout can go here after interim_word layer
-        attention_wcprod_batch = []
-        for item_in_batch in range(context_word_embed_bert_layer_12.size(0)):
-            
-            attention_wc_prod = torch.mul(attention_cvector_batch[item_in_batch,:],
-                                          self.sigmoid(self.dropout_word(self.interm_word(context_word_embed_bert_layer_12[item_in_batch,:,:])))).sum(dim=1) # shape (1,1)
-            attention_wcprod_batch.append(attention_wc_prod)
+        # convert 3d to 2d matrix
+        original_size = context_word_embed_bert_layer_12.size()
+        context_word_embed_bert_layer_12 = context_word_embed_bert_layer_12.view(original_size[0],original_size[-1])
         
-        attention_wcprod_batch = torch.cat(attention_wcprod_batch,dim=0) # shape (N,1)
-        context_pred = self.sigmoid(attention_wcprod_batch).unsqueeze(-1) # shape (N,1)
-    
-        return y_pred, context_pred, attention_cvector_batch, attention_all_norm
-
-def reset_weights(m):
-    """
-    Try resetting model weights to avoid
-    weight leakage.
-    """
-    for layer in m.children():
-        if hasattr(layer, 'reset_parameters'):
-            print("Reset trainable parameters of layer : %s"%str(layer))
-            layer.reset_parameters()
+        # Convert dual attention layer weights to single set of weights for dot product
+#         total_attention = self.softmax(self.dropout(self.attention_combine(total_attention)))
+        
+        dot_prod_sim = torch.mul(attention_vector_batch, context_word_embed_bert_layer_12).sum(dim=1) # dot product between (N,768) and (N,768)
+        
+        word_preds = self.sigmoid(dot_prod_sim)
+        
+        word_preds = word_preds.view(word_preds.size()[0],1)
+        
+        return y_preds,word_preds, None, None

@@ -234,34 +234,25 @@ def gen_samples(df,neg_sample_size=3):
     ps_labels = df["binary_ps"].tolist()
     pos_con_word = df["context_word_pos"].tolist()
     neg_con_word = df["context_word_neg"].tolist()
-    which_cluster = df["which_cluster"].tolist()
-    
-#     print("Which_cluster size : %s" %str(len(which_cluster)))
     
     text_list_neg = []
     ps_labels_neg = []
     text_list_pos = []
     ps_labels_pos = []
-    which_cluster_pos = []
-    which_cluster_neg = []
     
     for ind_t, text in enumerate(text_list):
         text_list_neg.append([text]*neg_sample_size)
         ps_labels_neg.append([ps_labels[ind_t]]*neg_sample_size)
-        which_cluster_neg.append([which_cluster[ind_t]]*neg_sample_size)
         text_list_pos.append([text]*neg_sample_size)
         ps_labels_pos.append([ps_labels[ind_t]]*neg_sample_size)
-        which_cluster_pos.append([which_cluster[ind_t]]*neg_sample_size)
         
     text_list_neg = list(itertools.chain(*text_list_neg))
     neg_con_word = list(itertools.chain(*neg_con_word))
     ps_labels_neg = list(itertools.chain(*ps_labels_neg))
-    which_cluster_neg = list(itertools.chain(*which_cluster_neg))
     
     text_list_pos = list(itertools.chain(*text_list_pos))
     pos_con_word = list(itertools.chain(*pos_con_word))
     ps_labels_pos = list(itertools.chain(*ps_labels_pos))
-    which_cluster_pos = list(itertools.chain(*which_cluster_pos))
     
     assert len(text_list_neg) == len(neg_con_word)
     assert len(text_list_neg) == len(text_list_pos)
@@ -271,14 +262,12 @@ def gen_samples(df,neg_sample_size=3):
     all_con_word = pos_con_word + neg_con_word
     all_word_labels = ([1]*len(pos_con_word)) + ([0] * len(neg_con_word))
     all_ps_labels = ps_labels_pos + ps_labels_neg
-    all_which_clusters = which_cluster_pos + which_cluster_neg
     
     df_sample = pd.DataFrame()
     df_sample["text"] = all_text_list
     df_sample["context_word"] = all_con_word
     df_sample["word_label"] = all_word_labels
     df_sample["class_label"] = all_ps_labels
-    df_sample["which_cluster"] = all_which_clusters
     
     df_sample = df_sample.loc[df_sample["context_word"] != "DROP_THIS"].reset_index(drop=True)
     
@@ -331,23 +320,17 @@ def get_train_test_ssda(df,cp,doc_2_cluster_map,neg_sample_size=3,single_task=Tr
     * From cluster 1 choose 70% of the data for train, 30% for test
     * From cluster 2 choose 10% of 70% from c1 for train, test of cluster 1 test size
     """
-    strata_columns = []
-    if single_task:
-        strata_columns = ["binary_ps"]
-    
-    if not single_task:
-        strata_columns = ["class_label","word_label"]
     c1_df, c2_df = get_train_test_attm(df,cp,doc_2_cluster_map,neg_sample_size=neg_sample_size,single_task=single_task)
     c1_df["which_cluster"] = [1]*c1_df.shape[0]
     c2_df["which_cluster"] = [2]*c2_df.shape[0]
     
-    c1_train, c1_test = train_test_split(c1_df,test_size=0.20, stratify=c1_df[strata_columns], random_state=CONFIG.RANDOM_SEED)
+    c1_train, c1_test = train_test_split(c1_df,test_size=0.20, random_state=CONFIG.RANDOM_SEED)
     
-    c1_train, c1_val = train_test_split(c1_train,test_size=0.10,stratify=c1_train[strata_columns], random_state=CONFIG.RANDOM_SEED)
+    c1_train, c1_val = train_test_split(c1_train,test_size=0.10, random_state=CONFIG.RANDOM_SEED)
     
     c1_train_num = c1_train.shape[0]
     
-    c2_df_train,c2_df_test = train_test_split(c2_df,train_size=int(0.1*c1_train_num),stratify=c2_df[strata_columns], random_state=CONFIG.RANDOM_SEED)
+    c2_df_train,c2_df_test = train_test_split(c2_df,train_size=int(0.1*c1_train_num), random_state=CONFIG.RANDOM_SEED)
     
     print("\nSample size from C1 in Train : %s" %str(c1_train.shape))
     if single_task:
@@ -367,7 +350,7 @@ def get_train_test_ssda(df,cp,doc_2_cluster_map,neg_sample_size=3,single_task=Tr
     else:
         get_label_dist(train["class_label"].tolist())
     
-    c2_test_,c2_val_temp = train_test_split(c2_df_test,train_size=c1_test.shape[0],stratify=c2_df_test[strata_columns], random_state=CONFIG.RANDOM_SEED)
+    c2_test_,c2_val_temp = train_test_split(c2_df_test,train_size=c1_test.shape[0], random_state=CONFIG.RANDOM_SEED)
     
     print("\nSample Size from C1 in Test : %s" %str(c1_test.shape))
     if single_task:
@@ -387,7 +370,7 @@ def get_train_test_ssda(df,cp,doc_2_cluster_map,neg_sample_size=3,single_task=Tr
     else:
         get_label_dist(test["class_label"].tolist())
         
-    c2_val , _ = train_test_split(c2_val_temp,train_size=c1_val.shape[0],stratify=c2_val_temp[strata_columns], random_state=CONFIG.RANDOM_SEED)
+    c2_val , _ = train_test_split(c2_val_temp,train_size=c1_val.shape[0], random_state=CONFIG.RANDOM_SEED)
     
     train = train.sample(frac=1.0,random_state=int(CONFIG.RANDOM_SEED * 0.01))
     test = test.sample(frac=1.0,random_state=int(CONFIG.RANDOM_SEED * 0.1))
@@ -409,7 +392,6 @@ def get_train_test_ssda(df,cp,doc_2_cluster_map,neg_sample_size=3,single_task=Tr
     else:
         get_label_dist(val["class_label"].tolist())
     val = val.sample(frac=1.0,random_state=int(CONFIG.RANDOM_SEED * 0.01))
-    
     return train,test,val
 
 def get_train_test_ssda_updated(df,cp,doc_2_cluster_map,neg_sample_size=3,single_task=True):
@@ -455,6 +437,11 @@ def get_train_test_ssda_updated(df,cp,doc_2_cluster_map,neg_sample_size=3,single
         test["word_label"] = 0 #Dummy Label
         test["class_label"] = test["binary_ps"]
     
+    if single_task:
+        train["processed_all"] = train["processed_title"] + " " + train["processed_text"]
+        val["processed_all"] = val["processed_title"] + " " + val["processed_text"]
+        test["processed_all"] = test["processed_title"] + " " + test["processed_text"]
+    
     # Shuffle all three datasets
     train = train.sample(frac=1.0,random_state=int(CONFIG.RANDOM_SEED * 0.01))
     test = test.sample(frac=1.0,random_state=int(CONFIG.RANDOM_SEED * 0.1))
@@ -464,9 +451,4 @@ def get_train_test_ssda_updated(df,cp,doc_2_cluster_map,neg_sample_size=3,single
     print("Train : %s" %str(train.shape))
     print("Val : %s" %str(val.shape))
     print("Test : %s" %str(test.shape))
-    
-    print("Train Columns :\n %s"%str(train.columns))
-    print("Test Columns :\n %s"%str(test.columns))
-    print("Val Columns :\n %s"%str(val.columns))
-    
     return train,test,val

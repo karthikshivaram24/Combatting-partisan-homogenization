@@ -21,10 +21,13 @@ from Scripts.utils.general_utils import timer
 import Scripts.utils.config as CONFIG
 from attm_utils import load_pickle
 from attm_dataloaders import CPDatasetMT, CPDatasetST
-from attm_data_utils import get_train_test_ssda_updated
+from attm_data_utils import get_train_test_ssda
 from attm_metrics import calculate_scores, calculate_scores_single, get_accuracy_from_logits
 from attm_model_utils import evaluate_mt, evaluate_st, EarlyStopping
-from attm_single_task import AttentionST, AttentionSTUpdated
+from attm_single_task import AttentionSTUpdated
+from attm_multi_task import AttentionMTUpdated
+from attm_model_utils import evaluate_mt, evaluate_st
+from attm_single_task import AttentionST
 from attm_multi_task import AttentionMT
 import  gc
 import time
@@ -32,24 +35,109 @@ import pickle
 import argparse
 import attm_config
 import os
+import glob
 import dill
 import ast
 import itertools
+from tqdm import tqdm
 
-np.random.seed(CONFIG.RANDOM_SEED)
+
 torch.multiprocessing.set_sharing_strategy('file_system')
 
-torch.manual_seed(24)
+torch.manual_seed(42)
+
+def load_net_single(path):
+    """
+    """
+    model = AttentionSTUpdated()
+    model.load_state_dict(torch.load(path))
+    return model
+
+def load_net_multi(path):
+    """
+    """
+    model = AttentionMTUpdated()
+    model.load_state_dict(torch.load(path))
+    return model
+
+def average_snapshots(list_of_snapshots_paths,single=True):
+    """
+    """
+    snapshots_weights = {}
+    model = None
+    for snapshot_path in list_of_snapshots_paths:
+        if single:
+            model = load_net_single(path=snapshot_path)
+        if not single:
+            model = load_net_multi(path=snapshot_path)
+        snapshots_weights[snapshot_path] = dict(model.named_parameters())
+    
+    print(snapshots_weights.keys())
+    params = model.named_parameters()
+    dict_params = dict(params)
+
+    N = len(snapshots_weights)
+
+    for name in dict_params.keys():
+        custom_params = None
+        for _, snapshot_params in snapshots_weights.items():
+            if custom_params is None:
+                custom_params = snapshot_params[name].data
+            else:
+                custom_params += snapshot_params[name].data
+        dict_params[name].data.copy_(custom_params/N)
+
+    model_dict = model.state_dict()
+    
+    # only update non-bert params
+    
+    print("\nUpdating Params :")
+    for param in dict_params.keys():
+        if "bert" not in param:
+            print(param)
+            model_dict[param] = dict_params[param]
+    
+#     model_dict.update(dict_params)
+
+    model.load_state_dict(model_dict)
+    model.eval()
+
+    return model
+
+def save_checkpoint(root_folder,model,lr,epochs,batch_size,current_epoch,dropout):
+    """
+    """
+    # create a folder inside root_folder for the param_combo and create a checkpoint for the corresponding epochs
+    folder_name = "(%s,%s,%s,%s)"%(str(lr),str(epochs),str(batch_size),str(dropout))
+    
+    total_path = root_folder + os.path.sep + folder_name
+    
+    # check if directory exists , if it doesnt create it
+    if not os.path.isdir(total_path):
+        os.makedirs(total_path)
+    
+    # save current epoch model as a state dict
+    save_path = total_path+os.path.sep+"%s.pt"%str(current_epoch)
+    print("Saving Checkpoint to : %s" %str(save_path))
+    torch.save(model.state_dict(), save_path)
+    return save_path
+
+def run_cleaner(files):
+    """
+    """
+    for f in files:
+        os.path.isfile(f)
+        os.remove(f)
 
 def run_ssda_cp_mt(df,cp,doc_2_cluster_map,
                    learning_rates=[0.0001,0.001,0.01,0.1],
-                   epochs=[3],
+                   epochs=3,
                    word_pred_loss_weights=[0.3,0.8],
-                   batch_sizes=[8],
+                   batch_size=8,
                    neg_sample_size=3,
-                   dropouts= [0.1,0.3,0.5],
                    single_task=False,
-                   cuda_device=torch.device('cuda:1')):
+                   cuda_device=torch.device('cuda:1'), 
+                   return_model=False):
     """
     Uses a self supervised domain adaptation setting to train the model
     
@@ -62,7 +150,7 @@ def run_ssda_cp_mt(df,cp,doc_2_cluster_map,
     * Loss check
     * Metrics = F1, recall, precision, accuracy, roc
     """
-    train, test,val = get_train_test_ssda_updated(df,cp,doc_2_cluster_map,neg_sample_size=neg_sample_size,single_task=single_task)
+    train, test = get_train_test_ssda(df,cp,doc_2_cluster_map,neg_sample_size=neg_sample_size,single_task=single_task)
     metrics_train = {}
     metrics_test = {}
     losses_train = {}
@@ -73,7 +161,9 @@ def run_ssda_cp_mt(df,cp,doc_2_cluster_map,
     
     print("Number of param combinations : %s" %str(len(params_all_combo)))
     
-    for param_list in params_all_combo:
+    for p_id,param_list in enumerate(params_all_combo):
+        
+        print("Param_setting : %s" %str(p_id))
         
         lr = param_list[0]
         epoch = param_list[1]
@@ -89,23 +179,25 @@ def run_ssda_cp_mt(df,cp,doc_2_cluster_map,
         
 
         model, epoch_losses, scores_train, scores_test, end_epoch = run_ssda_MT(train,test,val,lr,wlw,epochs=epoch,batch_size=batch_size,dropout=dropout,cuda_device=cuda_device,num_workers=3)
-        metrics_train[(lr,end_epoch+1,batch_size,dropout,wlw)] = scores_train
-        metrics_test[(lr,end_epoch+1,batch_size,dropout,wlw)] = scores_test
-        losses_train[(lr,end_epoch+1,batch_size,dropout,wlw)] = epoch_losses
-#         model_dict[(lr,end_epoch+1,batch_size,dropout,wlw)] = model
+        metrics_train[(lr,end_epoch,batch_size,dropout,wlw)] = scores_train
+        metrics_test[(lr,end_epoch,batch_size,dropout,wlw)] = scores_test
+        losses_train[(lr,end_epoch,batch_size,dropout,wlw)] = epoch_losses
+        if return_model:
+            model_dict[(lr,end_epoch,batch_size,dropout)] = model
             
-    return metrics_train,metrics_test, losses_train, model_dict
+    return metrics_train,metrics_test, losses_train
 
 def run_ssda_cp_st(df,cp,doc_2_cluster_map,
                    learning_rates=[0.0001,0.001,0.01,0.1],
-                   epochs=[3],
+                   epochs=3,
                    word_pred_loss_weights=[0.3,0.8],
-                   batch_sizes=[8],
-                   dropouts=[0.1,0.3],
+                   batch_size=8,
                    neg_sample_size=3,
                    single_task=True,
                    with_attention=True,
-                   cuda_device=torch.device('cuda:1')):
+                   cuda_device=torch.device('cuda:1'), 
+                   return_model=False,
+                   checkpoint_averaging=True):
     """
     Uses a self supervised domain adaptation setting to train the model
     
@@ -118,11 +210,11 @@ def run_ssda_cp_st(df,cp,doc_2_cluster_map,
     * Loss check
     * Metrics = F1, recall, precision, accuracy, roc
     """
-    train, test, val = get_train_test_ssda_updated(df,cp,doc_2_cluster_map,neg_sample_size=neg_sample_size,single_task=single_task)
+    train, test = get_train_test_ssda(df,cp,doc_2_cluster_map,neg_sample_size=neg_sample_size,single_task=single_task)
     metrics_train = {}
     metrics_test = {}
     losses_train = {}
-    model_dict = None
+    model_dict = {}
     # train ssda func
     params = [learning_rates,epochs,batch_sizes,dropouts]
     
@@ -130,7 +222,9 @@ def run_ssda_cp_st(df,cp,doc_2_cluster_map,
     
     print("Number of param combinations : %s" %str(len(params_all_combo)))
     
-    for param_list in params_all_combo:
+    for p_id,param_list in enumerate(params_all_combo):
+        
+        print("Param_setting : %s" %str(p_id))
         
         lr = param_list[0]
         epoch = param_list[1]
@@ -152,21 +246,23 @@ def run_ssda_cp_st(df,cp,doc_2_cluster_map,
                                                                      dropout = dropout,
                                                                      cuda_device=cuda_device,
                                                                      num_workers=4,
-                                                                     with_attention=with_attention)
+                                                                     with_attention=with_attention,
+                                                                     checkpoint_averaging=checkpoint_averaging,cp=cp)
 
-        metrics_train[(lr,end_epoch+1,batch_size,dropout)] = scores_train
-        metrics_test[(lr,end_epoch+1,batch_size,dropout)] = scores_test
-        losses_train[(lr,end_epoch+1,batch_size,dropout)] = epoch_losses
-#         model_dict[(lr,end_poch+1,batch_size,dropout)] = model
-
+        metrics_train[(lr,end_epoch,batch_size,dropout)] = scores_train
+        metrics_test[(lr,end_epoch,batch_size,dropout)] = scores_test
+        losses_train[(lr,end_epoch,batch_size,dropout)] = epoch_losses
         
-    return metrics_train,metrics_test, losses_train, model_dict
+        if return_model:
+            model_dict[(lr,end_epoch,batch_size,dropout)] = model
+            
+    return metrics_train,metrics_test, losses_train,model_dict
 
 @timer
-def run_ssda_MT(train,test,val,lr,word_loss_w,epochs=2,batch_size=8,dropout=0.1,cuda_device=torch.device('cuda:1'),num_workers=1,patience=2):
+def run_ssda_MT(train,test,lr,word_loss_w,epochs=2,batch_size=8,cuda_device=torch.device('cuda:1'),num_workers=1):
     """
     """
-    model = AttentionMT(embedding_size=768,verbose=False,which_forward=2,dropout=dropout)
+    model = AttentionMTUpdated(embedding_size=768,verbose=False,which_forward=2,dropout=dropout)
     model.to(cuda_device)
     loss_func = nn.BCELoss()
     opt = torch.optim.Adam(model.parameters(),lr=lr)
@@ -175,39 +271,28 @@ def run_ssda_MT(train,test,val,lr,word_loss_w,epochs=2,batch_size=8,dropout=0.1,
     total_losses = []
     word_losses = []
     rs_losses = []
-    total_losses_val = []
-    word_losses_val = []
-    rs_losses_val = []
     
     train_dataset = CPDatasetMT(train)
     test_dataset = CPDatasetMT(test)
-    val_dataset = CPDatasetMT(val)
     train_dataloader = DataLoader(train_dataset,batch_size=batch_size,num_workers=num_workers, shuffle=True)
     test_dataloader = DataLoader(test_dataset,batch_size=batch_size,num_workers=num_workers,shuffle=True)
-    val_dataloader = DataLoader(val_dataset,batch_size=batch_size,num_workers=num_workers,shuffle=True)
     
-    early_stopping = EarlyStopping(patience=patience)
-    end_epoch = None
-    
-    for epoch in range(epochs):
+    for epoch in tqdm(range(epochs),total=epochs):
         
         batch_losses_total = []
         batch_losses_rec = []
         batch_losses_word = []
         
-        for batch_num, (x1,x2,y1,y2,wc) in enumerate(train_dataloader):
+        for batch_num, (x1,am1,x2,y1,y2,wc) in enumerate(train_dataloader):
             
             model.train()
 
-            x1,x2,y1,y2 = x1.to(cuda_device),x2.to(cuda_device),y1.to(cuda_device),y2.to(cuda_device)
+            x1,am1,x2,y1,y2 = x1.to(cuda_device),am1.to(cuda_device),x2.to(cuda_device),y1.to(cuda_device),y2.to(cuda_device)
             
             opt.zero_grad() # reset all the gradient information
     
-            y_pred, context_pred, weighted_avg_context_vector,attention_combined_weights = model(x1, x2)
-        
-            if batch_size == 1:
-                y_pred = y_pred.view(1,1)
-                context_pred = context_pred.view(1,1)
+            y_pred, context_pred, weighted_avg_context_vector,attention_combined_weights = model(x1,am1, x2)
+
             
             rec_loss = loss_func(y_pred,y1)
             word_loss = loss_func(context_pred,y2)
@@ -218,74 +303,65 @@ def run_ssda_MT(train,test,val,lr,word_loss_w,epochs=2,batch_size=8,dropout=0.1,
             
             opt.step()
             
-            batch_losses_rec.append(rec_loss.item())
-            batch_losses_word.append(word_loss.item())
-            batch_losses_total.append(total_loss.item())
+            rs_losses.append(rec_loss.item())
+            word_losses.append(word_loss.item())
+            total_losses.append(total_loss.item())
             
-            if batch_num % 100 == 0 and batch_num >=100:
-                print("Epoch : %s | Batch : %s | Total Loss : %s | Rec Loss : %s | Word Loss : %s" % (str(epoch),str(batch_num),str(total_loss.item()),str(rec_loss.item()),str(word_loss.item())))
-                print("True Rec Labels : %s" %str(y1))
-                print("True Word Labels : %s" %str(y2))
-                print("Batch Class Predictions : %s"%str(y_pred))
-                print("Batch Word Label Predictions : %s"%str(context_pred))
-                print("Batch Accuracy class : %s"%str(get_accuracy_from_logits(y_pred,y1)))
-                print("Batch Accuracy word : %s"%str(get_accuracy_from_logits(context_pred,y2)))
+#             if batch_num % 100 == 0 and batch_num >=100:
+#                 print("Epoch : %s | Batch : %s | Total Loss : %s | Rec Loss : %s | Word Loss : %s" % (str(epoch),str(batch_num),str(total_loss.item()),str(rec_loss.item()),str(word_loss.item())))
+#                 print("True Rec Labels : %s" %str(y1))
+#                 print("True Word Labels : %s" %str(y2))
+#                 print("Batch Class Predictions : %s"%str(y_pred))
+#                 print("Batch Word Label Predictions : %s"%str(context_pred))
+#                 print("Batch Accuracy class : %s"%str(get_accuracy_from_logits(y_pred,y1)))
+#                 print("Batch Accuracy word : %s"%str(get_accuracy_from_logits(context_pred,y2)))
             
-        batch_losses_total_val = []
-        batch_losses_rec_val = []
-        batch_losses_word_val = []
-        
-        for bn_v, (xv1,xv2,yv1,yv2,wcv) in enumerate(val_dataloader):
-            
-            model.eval()
-            with torch.no_grad():
-                xv1,xv2,yv1,yv2 = xv1.to(cuda_device),xv2.to(cuda_device),yv1.to(cuda_device),yv2.to(cuda_device)
+            batch_losses_total_val = []
+            batch_losses_rec_val = []
+            batch_losses_word_val = []
 
-                y_pred, context_pred, weighted_avg_context_vector, attention_combined_weights = model(xv1, xv2)
-                
-                if batch_size == 1:
-                    y_pred = y_pred.view(1,1)
-                    context_pred = context_pred.view(1,1)
-            
-                rec_loss = loss_func(y_pred,yv1)
-                word_loss = loss_func(context_pred,yv2)
-            
-                total_loss = rec_loss + (word_loss_w * word_loss)
-                
-                batch_losses_rec_val.append(rec_loss.item())
-                batch_losses_word_val.append(word_loss.item())
-                batch_losses_total_val.append(total_loss.item())
+            for bn_v, (xv1,amv1,xv2,yv1,yv2,wcv) in enumerate(val_dataloader):
+
+                model.eval()
+                with torch.no_grad():
+                    xv1,amv1,xv2,yv1,yv2 = xv1.to(cuda_device),amv1.to(cuda_device),xv2.to(cuda_device),yv1.to(cuda_device),yv2.to(cuda_device)
+
+                    y_pred, context_pred, weighted_avg_context_vector, attention_combined_weights = model(xv1,amv1, xv2)
+
+                    if batch_size == 1:
+                        y_pred = y_pred.view(1,1)
+                        context_pred = context_pred.view(1,1)
+
+                    rec_loss = loss_func(y_pred,yv1)
+                    word_loss = loss_func(context_pred,yv2)
+
+                    total_loss = rec_loss + (word_loss_w * word_loss)
+
+                    batch_losses_rec_val.append(rec_loss.item())
+                    batch_losses_word_val.append(word_loss.item())
+                    batch_losses_total_val.append(total_loss.item())
         
-        avg_batch_losses_total = np.mean(batch_losses_total)
-        avg_batch_losses_rec = np.mean(batch_losses_rec)
-        avg_batch_losses_word = np.mean(batch_losses_word)
-        
-        avg_batch_losses_total_val =np.mean(batch_losses_total_val)
-        avg_batch_losses_rec_val = np.mean(batch_losses_rec_val)
-        avg_batch_losses_word_val =np.mean(batch_losses_word_val)
-        
-        print("Avg Batch Total Loss Train : %s" %str(avg_batch_losses_total))
-        print("Avg Batch Toal Loss Val : %s" %str(avg_batch_losses_total_val))
-        
-        total_losses.append(avg_batch_losses_total)
-        word_losses.append(avg_batch_losses_word)
-        rs_losses.append(avg_batch_losses_rec)
-        total_losses_val.append(avg_batch_losses_total_val)
-        word_losses_val.append(avg_batch_losses_word_val)
-        rs_losses_val.append(avg_batch_losses_rec_val)
-        
-        early_stopping(avg_batch_losses_total_val)
-        
-        if early_stopping.early_stop:
-            end_epoch = epoch
-            break
+            avg_batch_losses_total = np.mean(batch_losses_total)
+            avg_batch_losses_rec = np.mean(batch_losses_rec)
+            avg_batch_losses_word = np.mean(batch_losses_word)
+
+            avg_batch_losses_total_val =np.mean(batch_losses_total_val)
+            avg_batch_losses_rec_val = np.mean(batch_losses_rec_val)
+            avg_batch_losses_word_val =np.mean(batch_losses_word_val)
+
+            print("Avg Batch Total Loss Train : %s" %str(avg_batch_losses_total))
+            print("Avg Batch Toal Loss Val : %s" %str(avg_batch_losses_total_val))
+
+            total_losses.append(avg_batch_losses_total)
+            word_losses.append(avg_batch_losses_word)
+            rs_losses.append(avg_batch_losses_rec)
+            total_losses_val.append(avg_batch_losses_total_val)
+            word_losses_val.append(avg_batch_losses_word_val)
+            rs_losses_val.append(avg_batch_losses_rec_val)
             
     epoch_losses["rs_loss"] = rs_losses
     epoch_losses["word_loss"] = word_losses
     epoch_losses["total_loss"] = total_losses
-    epoch_losses["rs_loss_val"] = rs_losses_val
-    epoch_losses["word_loss_val"] = word_losses_val
-    epoch_losses["total_loss_val"] = total_losses_val
 
     scores_train = evaluate_mt(model,train_dataloader,device=cuda_device)
     scores_test = evaluate_mt(model,test_dataloader,device=cuda_device)
@@ -308,48 +384,44 @@ def run_ssda_MT(train,test,val,lr,word_loss_w,epochs=2,batch_size=8,dropout=0.1,
     gc.collect()
     torch.cuda.empty_cache()
     
-    if end_epoch == None:
-        end_epoch = epochs
-    
-    return model, epoch_losses, scores_train, scores_test, end_epoch
+    return model, epoch_losses, scores_train, scores_test
 
 @timer
-def run_ssda_ST(train,test,val,lr,epochs=2,batch_size=8,dropout=0.1,cuda_device=torch.device('cuda:1'),num_workers=1,with_attention=True,patience=2):
+def run_ssda_ST(train,test,val,lr,epochs=2,batch_size=8,dropout=0.1,cuda_device=torch.device('cuda:1'),num_workers=1,with_attention=True,patience=2,checkpoint_averaging=True,cp=None):
     """
     """
-    model = AttentionSTUpdated(embedding_size=768,verbose=False,which_forward=2,with_attention=with_attention,dropout=dropout)
+    model = AttentionST(embedding_size=768,verbose=False,which_forward=2,with_attention=with_attention)
     model.to(cuda_device)
     loss_func = nn.BCELoss()
     opt = torch.optim.Adam(model.parameters(),lr=lr)
     
     epoch_losses = {}
     total_losses = []
-    total_losses_val = []
     word_losses = []
     rs_losses = []
     
+    checkpoint_paths = []
+    
     train_dataset = CPDatasetST(train)
     test_dataset = CPDatasetST(test)
-    val_dataset = CPDatasetST(val)
     train_dataloader = DataLoader(train_dataset,batch_size=batch_size,num_workers=num_workers,shuffle=True)
-    test_dataloader = DataLoader(test_dataset,batch_size=batch_size,num_workers=num_workers,shuffle=True)
-    val_dataloader = DataLoader(val_dataset,batch_size=batch_size,num_workers=num_workers,shuffle=True)
+    test_dataloader = DataLoader(test_dataset,batch_size=20,num_workers=num_workers,shuffle=True)
     
     early_stopping_val_loss = 10000.0 # arbitarily high loss value
     early_stopping = EarlyStopping(patience=patience)
     end_epoch = None
-    for epoch in range(epochs):
+    for epoch in tqdm(range(epochs),total=epochs):
         batch_losses =  []
         # Training
-        for batch_num, (x1,y1,wc) in enumerate(train_dataloader):
+        for batch_num, (x1,am1,y1,wc) in enumerate(train_dataloader):
             
             model.train()
 
-            x1,y1 = x1.to(cuda_device),y1.to(cuda_device)
+            x1,am1,y1 = x1.to(cuda_device),am1.to(cuda_device),y1.to(cuda_device)
             
             opt.zero_grad() # reset all the gradient information
     
-            y_pred, attention_vector, attention_combined_weights = model(x1)
+            y_pred, attention_vector, attention_combined_weights = model(x1,am1)
             
             if batch_size == 1:
                 y1 = y1.view(1)
@@ -357,30 +429,30 @@ def run_ssda_ST(train,test,val,lr,epochs=2,batch_size=8,dropout=0.1,cuda_device=
             if batch_size > 1:
                 y1 = y1.squeeze()
             
-            
-            total_loss = loss_func(y_pred,y1) 
+            total_loss = loss_func(y_pred,y1.squeeze()) 
             
             total_loss.backward()
             
             opt.step()
             
-            batch_losses.append(total_loss.item())
+            total_losses.append(total_loss.item())
             
-            if batch_num % 100 == 0 and batch_num >=100:
-                print("Epoch : %s | Batch : %s | Total Loss : %s " % (str(epoch),str(batch_num),str(total_loss.item())))
-                print("True Rec Labels : %s" %str(y1))
-                print("Batch Class Predictions : %s"%str(y_pred))
-                print("Batch Accuracy class : %s"%str(get_accuracy_from_logits(y_pred,y1)))
+<<<<<<< HEAD
+#             if batch_num % 100 == 0 and batch_num >=100:
+#                 print("Epoch : %s | Batch : %s | Total Loss : %s " % (str(epoch),str(batch_num),str(total_loss.item())))
+#                 print("True Rec Labels : %s" %str(y1))
+#                 print("Batch Class Predictions : %s"%str(y_pred))
+#                 print("Batch Accuracy class : %s"%str(get_accuracy_from_logits(y_pred,y1)))
         
         # Validation
         batch_losses_val =  []
-        for bn_v, (xv1,yv1,wcv) in enumerate(val_dataloader):
+        for bn_v, (xv1,amv1,yv1,wcv) in enumerate(val_dataloader):
             
             model.eval()
             with torch.no_grad():
-                xv1,yv1 = xv1.to(cuda_device),yv1.to(cuda_device)
+                xv1,amv1,yv1 = xv1.to(cuda_device),amv1.to(cuda_device),yv1.to(cuda_device)
 
-                y_pred, attention_vector, attention_combined_weights = model(xv1)
+                y_pred, attention_vector, attention_combined_weights = model(xv1,amv1)
                 
                 if batch_size == 1:
                     yv1 = yv1.view(1)
@@ -393,16 +465,41 @@ def run_ssda_ST(train,test,val,lr,epochs=2,batch_size=8,dropout=0.1,cuda_device=
         
         avg_batch_loss = np.mean(batch_losses)
         avg_batch_loss_val = np.mean(batch_losses_val)
-        print("Avg Batch Loss Train : %s" %str(avg_batch_loss))
         total_losses.append(avg_batch_loss)
-        print("Avg Batch Loss Val : %s" %str(avg_batch_loss_val))
         total_losses_val.append(avg_batch_loss_val)
+    
         
-        early_stopping(avg_batch_loss_val)
+        if checkpoint_averaging:
+            # check total_epochs
+            if epochs > 5 and epochs - epoch <3:
+                # checkpoint last 3 epochs
+                save_path = save_checkpoint(root_folder="model_checkpointing_temp",
+                                model=model,
+                                lr=lr,
+                                epochs=epochs,
+                                batch_size=batch_size,
+                                current_epoch=epoch,
+                                dropout=dropout)
+                
+                checkpoint_paths.append(save_path)
+                
+            if epochs <= 5 and epochs - epoch <2:
+                # checkpoint last 2 epochs
+                save_path = save_checkpoint(root_folder="model_checkpointing_temp",
+                                model=model,
+                                lr=lr,
+                                epochs=epochs,
+                                batch_size=batch_size,
+                                current_epoch=epoch,
+                                dropout=dropout)
+                
+                checkpoint_paths.append(save_path)
         
-        if early_stopping.early_stop:
-            end_epoch = epoch
-            break
+#         early_stopping(avg_batch_loss_val)
+        
+#         if early_stopping.early_stop:
+#             end_epoch = epoch
+#             break
         
 #         if early_stopping_val_loss > avg_batch_loss_val:
 #             early_stopping_val_loss = avg_batch_loss_val
@@ -428,9 +525,10 @@ def run_ssda_ST(train,test,val,lr,epochs=2,batch_size=8,dropout=0.1,cuda_device=
 
     gc.collect()
     torch.cuda.empty_cache()
-    
     if end_epoch == None:
         end_epoch = epochs
+    
+    run_cleaner(files=checkpoint_paths)
     
     return model, epoch_losses, scores_train, scores_test, end_epoch
     
@@ -477,14 +575,13 @@ if __name__ == "__main__":
     if args.task == "single" and args.at == "True":
         
         print("Setting : Single Task with Attention")
-        metrics_train,metrics_test, losses_train,model_dict = run_ssda_cp_st(df=df,
+        metrics_train,metrics_test, losses_train = run_ssda_cp_st(df=df,
                                                                   cp = ast.literal_eval(args.cluster_pair),
                                                                   doc_2_cluster_map=doc_2_cluster_map,
                                                                   learning_rates=attm_config.lr,
                                                                    epochs=attm_config.epochs,
                                                                    word_pred_loss_weights=attm_config.word_weights,
-                                                                   batch_sizes=attm_config.batch_size,
-                                                                   dropouts = attm_config.dropouts,
+                                                                   batch_size=attm_config.batch_size,
                                                                    neg_sample_size=3,
                                                                    single_task=True,
                                                                    with_attention=True,
@@ -501,14 +598,13 @@ if __name__ == "__main__":
         
         print("Setting : Single Task without Attention")
         
-        metrics_train,metrics_test, losses_train, model_dict = run_ssda_cp_st(df=df,
+        metrics_train,metrics_test, losses_train = run_ssda_cp_st(df=df,
                                                                   cp = ast.literal_eval(args.cluster_pair),
                                                                   doc_2_cluster_map=doc_2_cluster_map,
                                                                   learning_rates=attm_config.lr,
                                                                    epochs=attm_config.epochs,
                                                                    word_pred_loss_weights=attm_config.word_weights,
-                                                                   batch_sizes=attm_config.batch_size,
-                                                                   dropouts = attm_config.dropouts,
+                                                                   batch_size=attm_config.batch_size,
                                                                    neg_sample_size=3,
                                                                    single_task=True,
                                                                    with_attention=False,
@@ -525,14 +621,13 @@ if __name__ == "__main__":
         
         print("Setting : Multi Task with Attention")
         
-        metrics_train,metrics_test, losses_train, model_dict = run_ssda_cp_mt(df=df,
+        metrics_train,metrics_test, losses_train = run_ssda_cp_mt(df=df,
                                                                   cp = ast.literal_eval(args.cluster_pair),
                                                                   doc_2_cluster_map=doc_2_cluster_map,
                                                                   learning_rates=attm_config.lr,
-                                                                   epochs=attm_config.epochs,
+                                                                  epochs=attm_config.epochs,
                                                                    word_pred_loss_weights=attm_config.word_weights,
-                                                                   batch_sizes=attm_config.batch_size,
-                                                                   dropouts = attm_config.dropouts,
+                                                                   batch_size=attm_config.batch_size,
                                                                    neg_sample_size=3,
                                                                    single_task=False,
                                                                    cuda_device=torch.device('cuda:'+args.cuda_device))
