@@ -1,8 +1,8 @@
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from config import RANDOM_SEED
-from general_utils import timer
+from Scripts.utils.config import RANDOM_SEED
+from Scripts.utils.general_utils import timer
 import numpy as np
 import pandas as pd
 import pickle
@@ -68,6 +68,7 @@ def plot_size_dist(cluster_sizes):
     plt.bar(cluster_sizes.keys(), cluster_sizes.values(),width=2)
     plt.xlabel("Cluster-Number")
     plt.ylabel("Documents in Cluster")
+    
     plt.title("Cluster Size Distribution")
     plt.savefig("Graphs/cluster_size_dist.pdf")
     plt.show()

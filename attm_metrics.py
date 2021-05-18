@@ -95,9 +95,9 @@ def calc_score_(yp_1,yp_2,y1,y2,scores_,key="overall"):
     if 0.0 not in yp_2 or 1.0 not in yp_2: 
         print("One class predictions for word labels")
     
-    f1 = metrics.f1_score(y1,yp_1)
-    prec = metrics.precision_score(y1,yp_1)
-    recall = metrics.recall_score(y1,yp_1)
+    f1 = metrics.f1_score(y1,yp_1,average="macro")
+    prec = metrics.precision_score(y1,yp_1,average="macro")
+    recall = metrics.recall_score(y1,yp_1,average="macro")
     try:
         roc_auc = metrics.roc_auc_score(y1,yp_1)
     except:
@@ -145,9 +145,9 @@ def calc_score_single(yp_1,y1,scores_,key="overall"):
         print("One class predicitions for class labels")
     
     
-    f1 = metrics.f1_score(y1,yp_1)
-    prec = metrics.precision_score(y1,yp_1)
-    recall = metrics.recall_score(y1,yp_1)
+    f1 = metrics.f1_score(y1,yp_1,average="macro")
+    prec = metrics.precision_score(y1,yp_1,average="macro")
+    recall = metrics.recall_score(y1,yp_1,average="macro")
     try:
         roc_auc = metrics.roc_auc_score(y1,yp_1)
     except:

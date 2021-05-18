@@ -23,12 +23,12 @@ from attm_utils import load_pickle
 from attm_dataloaders import CPDatasetMT, CPDatasetST
 from attm_data_utils import get_train_test_ssda
 from attm_metrics import calculate_scores, calculate_scores_single, get_accuracy_from_logits
-from attm_model_utils import evaluate_mt, evaluate_st, EarlyStopping
+from attm_model_utils import evaluate_mt, evaluate_st
 from attm_single_task import AttentionSTUpdated
 from attm_multi_task import AttentionMTUpdated
 from attm_model_utils import evaluate_mt, evaluate_st
-from attm_single_task import AttentionST
-from attm_multi_task import AttentionMT
+from attm_single_task import AttentionSTUpdated
+from attm_multi_task import AttentionMTUpdated
 import  gc
 import time
 import pickle
@@ -390,7 +390,7 @@ def run_ssda_MT(train,test,lr,word_loss_w,epochs=2,batch_size=8,cuda_device=torc
 def run_ssda_ST(train,test,val,lr,epochs=2,batch_size=8,dropout=0.1,cuda_device=torch.device('cuda:1'),num_workers=1,with_attention=True,patience=2,checkpoint_averaging=True,cp=None):
     """
     """
-    model = AttentionST(embedding_size=768,verbose=False,which_forward=2,with_attention=with_attention)
+    model = AttentionSTUpdated(embedding_size=768,verbose=False,which_forward=2,with_attention=with_attention)
     model.to(cuda_device)
     loss_func = nn.BCELoss()
     opt = torch.optim.Adam(model.parameters(),lr=lr)
@@ -408,7 +408,7 @@ def run_ssda_ST(train,test,val,lr,epochs=2,batch_size=8,dropout=0.1,cuda_device=
     test_dataloader = DataLoader(test_dataset,batch_size=20,num_workers=num_workers,shuffle=True)
     
     early_stopping_val_loss = 10000.0 # arbitarily high loss value
-    early_stopping = EarlyStopping(patience=patience)
+#     early_stopping = EarlyStopping(patience=patience)
     end_epoch = None
     for epoch in tqdm(range(epochs),total=epochs):
         batch_losses =  []
@@ -436,13 +436,6 @@ def run_ssda_ST(train,test,val,lr,epochs=2,batch_size=8,dropout=0.1,cuda_device=
             opt.step()
             
             total_losses.append(total_loss.item())
-            
-<<<<<<< HEAD
-#             if batch_num % 100 == 0 and batch_num >=100:
-#                 print("Epoch : %s | Batch : %s | Total Loss : %s " % (str(epoch),str(batch_num),str(total_loss.item())))
-#                 print("True Rec Labels : %s" %str(y1))
-#                 print("Batch Class Predictions : %s"%str(y_pred))
-#                 print("Batch Accuracy class : %s"%str(get_accuracy_from_logits(y_pred,y1)))
         
         # Validation
         batch_losses_val =  []

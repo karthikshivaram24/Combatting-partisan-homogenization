@@ -27,7 +27,7 @@ def run_clustering(vectors,seed=RANDOM_SEED,num_clusters=1000,clus_type="kmeans"
     """
     if clus_type == "kmeans":
         print("\nRunning KMEANS Clustering with k=%s" %str(num_clusters))
-        km = MiniBatchKMeans(n_clusters=num_clusters, random_state=seed, n_init=3, max_iter=200, batch_size=1000)
+        km = MiniBatchKMeans(n_clusters=num_clusters, random_state=seed, n_init=3, max_iter=200, batch_size=100)
         clusters = km.fit_predict(vectors)
         return clusters,km
     

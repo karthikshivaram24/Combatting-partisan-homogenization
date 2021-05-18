@@ -14,21 +14,18 @@ def evaluate_mt(model,dataloader,device=torch.device('cuda:1')):
     y2_true = []
     which_cluster = []
     with torch.no_grad():
-        for bid, (x1,am1,x2,y1,y2,wc) in enumerate(dataloader):
-            x1,am1,x2 = x1.to(device),am1.to(device), x2.to(device)
-            y_1,y_2,att_c,att_w = model(x1,am1,x2)
+        for bid, (x1v, x2v, y1v, t1v, wcv) in enumerate(dataloader):
+            x1v,y1v = x1v.to(device), y1v.to(device)
+            y_1,y_2 = model(x1v,None)
             y_1 = y_1.cpu().numpy()
-            y_2 = y_2.cpu().numpy()
             y1_preds.append(y_1.flatten())
-            y2_preds.append(y_2.flatten())
-            y1_true.append(y1.cpu().numpy().flatten())
-            y2_true.append(y2.cpu().numpy().flatten())
-            which_cluster.append(wc.cpu().numpy().flatten())
+            y1_true.append(y1v.cpu().numpy().flatten())
+            which_cluster.append(wcv.cpu().numpy().flatten())
     
     scores = calculate_scores(preds_1= np.concatenate(y1_preds,axis=0),
-                              preds_2=np.concatenate(y2_preds,axis=0),
+                              preds_2=np.zeros(np.concatenate(y1_preds,axis=0).shape),
                               true_1=np.concatenate(y1_true,axis=0),
-                              true_2=np.concatenate(y2_true,axis=0),
+                              true_2=np.zeros(np.concatenate(y1_true,axis=0).shape),
                               which_cluster = np.concatenate(which_cluster,axis=0))
     return scores
 
@@ -43,9 +40,9 @@ def evaluate_st(model,dataloader,device=torch.device('cuda:1')):
     y2_true = []
     which_cluster = []
     with torch.no_grad():
-        for bid, (x1,am1,y1,wc) in enumerate(dataloader):
-            x1,am1,y1 = x1.to(device),am1.to(device), y1.to(device)
-            y_1,att_c,att_w = model(x1,am1)
+        for bid, (x1,y1,t1,wc) in enumerate(dataloader):
+            x1,y1 = x1.to(device), y1.to(device)
+            y_1 = model(x1)
             y_1 = y_1.cpu().numpy()
             y1_preds.append(y_1.flatten())
             y1_true.append(y1.cpu().numpy().flatten())
