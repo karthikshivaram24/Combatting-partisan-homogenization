@@ -73,7 +73,7 @@ def mask_arrays_single(yp_1,y1,which_cluster,cluster_2_mask=1):
     return yp_1_ma, y1_ma
             
 
-def calc_score_(yp_1,yp_2,y1,y2,scores_,key="overall"):
+def calc_score_(yp_1,yp_2,y1,y2,scores_,key="overall",avg_type="binary"):
     """
     """
     yp_1 = np.array(yp_1)
@@ -95,9 +95,9 @@ def calc_score_(yp_1,yp_2,y1,y2,scores_,key="overall"):
     if 0.0 not in yp_2 or 1.0 not in yp_2: 
         print("One class predictions for word labels")
     
-    f1 = metrics.f1_score(y1,yp_1,average="macro")
-    prec = metrics.precision_score(y1,yp_1,average="macro")
-    recall = metrics.recall_score(y1,yp_1,average="macro")
+    f1 = metrics.f1_score(y1,yp_1,average=avg_type)
+    prec = metrics.precision_score(y1,yp_1,average=avg_type)
+    recall = metrics.recall_score(y1,yp_1,average=avg_type)
     try:
         roc_auc = metrics.roc_auc_score(y1,yp_1)
     except:
@@ -129,7 +129,7 @@ def calc_score_(yp_1,yp_2,y1,y2,scores_,key="overall"):
     
     return scores_
 
-def calc_score_single(yp_1,y1,scores_,key="overall"):
+def calc_score_single(yp_1,y1,scores_,key="overall",avg_type="binary"):
     """
     """
     yp_1 = np.array(yp_1)
@@ -145,9 +145,9 @@ def calc_score_single(yp_1,y1,scores_,key="overall"):
         print("One class predicitions for class labels")
     
     
-    f1 = metrics.f1_score(y1,yp_1,average="macro")
-    prec = metrics.precision_score(y1,yp_1,average="macro")
-    recall = metrics.recall_score(y1,yp_1,average="macro")
+    f1 = metrics.f1_score(y1,yp_1,average=avg_type)
+    prec = metrics.precision_score(y1,yp_1,average=avg_type)
+    recall = metrics.recall_score(y1,yp_1,average=avg_type)
     try:
         roc_auc = metrics.roc_auc_score(y1,yp_1)
     except:
@@ -164,7 +164,7 @@ def calc_score_single(yp_1,y1,scores_,key="overall"):
     return scores_
     
 
-def calculate_scores(preds_1,preds_2,true_1,true_2,which_cluster):
+def calculate_scores(preds_1,preds_2,true_1,true_2,which_cluster,avg_type="binary"):
     """
     """
     print("Y1 Pred Dist : ")
@@ -177,7 +177,7 @@ def calculate_scores(preds_1,preds_2,true_1,true_2,which_cluster):
     
     scores_ = defaultdict(lambda : defaultdict(lambda : defaultdict(float)))
     # overall_metrics
-    scores_ = calc_score_(preds_1,preds_2,true_1,true_2,scores_,key="overall")
+    scores_ = calc_score_(preds_1,preds_2,true_1,true_2,scores_,key="overall",avg_type=avg_type)
     
     # cluster 1 metrics
     yp_1_ma, yp_2_ma, y1_ma, y2_ma =  mask_arrays(preds_1,preds_2,true_1,true_2,which_cluster,cluster_2_mask=2)
@@ -185,11 +185,11 @@ def calculate_scores(preds_1,preds_2,true_1,true_2,which_cluster):
     
     # cluster 2 metrics
     yp_1_ma, yp_2_ma, y1_ma, y2_ma =  mask_arrays(preds_1,preds_2,true_1,true_2,which_cluster,cluster_2_mask=1)
-    scores_ = calc_score_(yp_1_ma,yp_2_ma,y1_ma,y2_ma,scores_,key="cluster2")
+    scores_ = calc_score_(yp_1_ma,yp_2_ma,y1_ma,y2_ma,scores_,key="cluster2",avg_type=avg_type)
     
     return scores_
 
-def calculate_scores_single(preds_1,true_1,which_cluster):
+def calculate_scores_single(preds_1,true_1,which_cluster,avg_type="binary"):
     """
     """
     print("Y1 Pred Dist : ")

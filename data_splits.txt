@@ -1,4 +1,0 @@
-C1 - 80% used for train, 20% for test
-* This 80% is split into train and val
-C2 - select samples for test - 20% of c1
-

@@ -4,7 +4,7 @@ from Scripts.utils.general_utils import timer
 from attm_metrics import calculate_scores, calculate_scores_single
 
 @timer
-def evaluate_mt(model,dataloader,device=torch.device('cuda:1')):
+def evaluate_mt(model,dataloader,device=torch.device('cuda:1'),avg_type="binary"):
     """
     """
     model.eval()
@@ -26,11 +26,11 @@ def evaluate_mt(model,dataloader,device=torch.device('cuda:1')):
                               preds_2=np.zeros(np.concatenate(y1_preds,axis=0).shape),
                               true_1=np.concatenate(y1_true,axis=0),
                               true_2=np.zeros(np.concatenate(y1_true,axis=0).shape),
-                              which_cluster = np.concatenate(which_cluster,axis=0))
+                              which_cluster = np.concatenate(which_cluster,axis=0),avg_type=avg_type)
     return scores
 
 @timer
-def evaluate_st(model,dataloader,device=torch.device('cuda:1')):
+def evaluate_st(model,dataloader,device=torch.device('cuda:1'),avg_type="binary"):
     """
     """
     model.eval()
@@ -50,6 +50,6 @@ def evaluate_st(model,dataloader,device=torch.device('cuda:1')):
     
     scores = calculate_scores_single(preds_1= np.concatenate(y1_preds,axis=0),
                               true_1=np.concatenate(y1_true,axis=0),
-                              which_cluster = np.concatenate(which_cluster,axis=0))
+                              which_cluster = np.concatenate(which_cluster,axis=0),avg_type=avg_type)
     return scores
 
