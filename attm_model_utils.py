@@ -16,7 +16,7 @@ def evaluate_mt(model,dataloader,device=torch.device('cuda:1'),avg_type="binary"
     with torch.no_grad():
         for bid, (x1v, x2v, y1v, t1v, wcv) in enumerate(dataloader):
             x1v,y1v = x1v.to(device), y1v.to(device)
-            y_1,y_2 ,attcvec,wloss= model(x1v,None)
+            y_1,y_2 ,attcvec= model(x1v,None)
             y_1 = y_1.cpu().numpy()
             y1_preds.append(y_1.flatten())
             y1_true.append(y1v.cpu().numpy().flatten())

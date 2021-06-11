@@ -77,10 +77,10 @@ def calc_score_(yp_1,yp_2,y1,y2,scores_,key="overall",avg_type="binary"):
     """
     """
     yp_1 = np.array(yp_1)
-    print("Predicted Label Shape : %s"%str(yp_1.shape))
+#     print("Predicted Label Shape : %s"%str(yp_1.shape))
     yp_2 = np.array(yp_2)
     y1 = np.array(y1)
-    print("True Label Shape : %s"%str(y1.shape))
+#     print("True Label Shape : %s"%str(y1.shape))
     y2 = np.array(y2)
      
     
@@ -89,11 +89,11 @@ def calc_score_(yp_1,yp_2,y1,y2,scores_,key="overall",avg_type="binary"):
     yp_2[yp_2 > 0.5] = 1.0
     yp_2[yp_2 <=0.5] = 0.0
     
-    if 0.0 not in yp_1 or 1.0 not in yp_1:
-        print("One class predicitions for class labels")
+#     if 0.0 not in yp_1 or 1.0 not in yp_1:
+#         print("One class predicitions for class labels")
     
-    if 0.0 not in yp_2 or 1.0 not in yp_2: 
-        print("One class predictions for word labels")
+#     if 0.0 not in yp_2 or 1.0 not in yp_2: 
+#         print("One class predictions for word labels")
     
     f1 = metrics.f1_score(y1,yp_1,average=avg_type)
     prec = metrics.precision_score(y1,yp_1,average=avg_type)
@@ -101,7 +101,7 @@ def calc_score_(yp_1,yp_2,y1,y2,scores_,key="overall",avg_type="binary"):
     try:
         roc_auc = metrics.roc_auc_score(y1,yp_1)
     except:
-        print("ROC Error")
+#         print("ROC Error")
         roc_auc = 0.0
     accuracy = metrics.accuracy_score(y1,yp_1)
     
@@ -117,7 +117,7 @@ def calc_score_(yp_1,yp_2,y1,y2,scores_,key="overall",avg_type="binary"):
     try:
         roc_auc = metrics.roc_auc_score(y2,yp_2)
     except:
-        print("ROC Error")
+#         print("ROC Error")
         roc_auc = 0.0
     accuracy = metrics.accuracy_score(y2,yp_2)
     
@@ -133,16 +133,16 @@ def calc_score_single(yp_1,y1,scores_,key="overall",avg_type="binary"):
     """
     """
     yp_1 = np.array(yp_1)
-    print("Predicted Label Shape : %s"%str(yp_1.shape))
+#     print("Predicted Label Shape : %s"%str(yp_1.shape))
     y1 = np.array(y1)
-    print("True Label Shape : %s"%str(y1.shape))
+#     print("True Label Shape : %s"%str(y1.shape))
      
     
     yp_1[yp_1 > 0.5] = 1.0
     yp_1[yp_1 <= 0.5] = 0.0
     
-    if 0.0 not in yp_1 or 1.0 not in yp_1:
-        print("One class predicitions for class labels")
+#     if 0.0 not in yp_1 or 1.0 not in yp_1:
+#         print("One class predicitions for class labels")
     
     
     f1 = metrics.f1_score(y1,yp_1,average=avg_type)
@@ -151,7 +151,7 @@ def calc_score_single(yp_1,y1,scores_,key="overall",avg_type="binary"):
     try:
         roc_auc = metrics.roc_auc_score(y1,yp_1)
     except:
-        print("ROC Error")
+#         print("ROC Error")
         roc_auc = 0.0
     accuracy = metrics.accuracy_score(y1,yp_1)
     
@@ -220,6 +220,6 @@ def get_accuracy_from_logits(probs,labels):
     probs = probs.detach().cpu().numpy()
     probs[probs > 0.5] = 1
     probs[probs <= 0.5] = 0
-    print(probs)
+#     print(probs)
     acc = metrics.accuracy_score(labels.cpu().numpy(),probs)
     return acc
